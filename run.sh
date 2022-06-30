@@ -4,10 +4,14 @@
 printUsage()
 {
     echo "Later ..."
-    echo "Usage: run.sh -r|-l|-o lowestIRFilename"
+    echo "Usage: run.sh -r|-l|-o lowestIRFilename|-i inputToRocmRunner"
     echo "-r  : execute the generated IR by mlir-rocm-runner"
     echo "-l  : generate the lowest IR of the kernel wrapper function"
     echo "-o <lowestIRFilename>: lowest IR filename"
+    echo "-i <inputToRocmRunner>: the default is driver_output.mlir"
+    echo "-v: verify function is generated in the host harness function"
+    echo "    so that last line of mlir-rocm-runner's output is printed."
+    echo "    Otherwise, the first line is printed (default)."
 }
 
 ## mlir tools
@@ -72,7 +76,9 @@ OPTIND=1
 run=0
 lowestIR=0
 lowestIRFilename="wrapper_lowest.mlir"
-while getopts "hrlo:" opt; do
+inputToRocmRunner="driver_output.mlir"
+hasVerify=0
+while getopts "hrlo:i:v" opt; do
     case "$opt" in
         h)
             printUsage
@@ -86,6 +92,12 @@ while getopts "hrlo:" opt; do
             ;;
         o)
             lowestIRFilename=$OPTARG
+            ;;
+        i)
+            inputToRocmRunner=$OPTARG
+            ;;
+        v)
+            hasVerify=1
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
@@ -115,9 +127,13 @@ if [[ $lowestIR -eq 1 ]]; then
 fi
 
 if [[ $run -eq 1 ]]; then
-    ${MLIR_ROCM_RUNNER} driver_output.mlir > tmp_result
-    result=$(tail -1 tmp_result)
-    echo "result: $result  (${MIOPEN_GEN_OUTPUT})"
+    ${MLIR_ROCM_RUNNER} $inputToRocmRunner > tmp_result
+    if [[ $hasVerify -eq 1 ]]; then
+        result=$(tail -1 tmp_result)
+        echo "result: $result  (${MIOPEN_GEN_OUTPUT})"
+    else
+        head -1 tmp_result
+    fi
     rm -f tmp_result
 fi
 

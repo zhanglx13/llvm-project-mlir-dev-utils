@@ -6,6 +6,9 @@ printUsage()
     echo "  options:"
     echo "    0: PR_shared_library_build_and_fixed_tests"
     echo "    1: enable all tests"
+    echo "    2: build static library libMLIRMIOpen"
+    echo "    3: build MIOpen with libMLIRMIOpen"
+    echo "    4: test MIOpen configs"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable tests for xdlops"
@@ -16,7 +19,9 @@ printUsage()
 ##
 PR_shared_library_build_and_fixed_tests()
 {
-    cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+    cd ~/llvm-project-mlir/
+    rm -f build/CMakeCache.txt
+    cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
@@ -26,6 +31,7 @@ PR_shared_library_build_and_fixed_tests()
           -DLLVM_LIT_ARGS=-v \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
           ../
+    cd build
     ninja
 }
 
@@ -34,7 +40,9 @@ PR_shared_library_build_and_fixed_tests()
 ##
 PR_enable_all()
 {
-    cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+    cd ~/llvm-project-mlir/
+    rm -f build/CMakeCache.txt
+    cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
@@ -44,8 +52,64 @@ PR_enable_all()
           -DLLVM_LIT_ARGS=-v \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
           ../
+    cd build
     ninja
 }
+
+build_staticLib()
+{
+    ##
+    ## build libMLIRMIOpen
+    ##
+    cd ~/llvm-project-mlir/
+    #rm -f build/CMakeCache.txt
+    cmake . -G Ninja -B build -DCMAKE_BUILD_TYPE=Release \
+          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
+          -DBUILD_FAT_LIBMLIRMIOPEN=ON
+    cd build
+    ninja libMLIRMIOpen
+    cmake --install . --component libMLIRMIOpen --prefix ~/dummy/
+}
+
+build_MIOpen_with_MLIR()
+{
+    ##
+    ## build MIOpen with libMLIRMIOpen
+    ##
+    cd ~/MIOpen
+    #rm -f build/CMakeCache.txt
+    cmake . -G "Unix Makefiles" -B build -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+          -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+          -DMIOPEN_USE_MLIR=On \
+          -DMIOPEN_BACKEND=HIP \
+          -DCMAKE_PREFIX_PATH=~/dummy \
+          "-DCMAKE_CXX_FLAGS=-isystem ~/dummy/include" \
+          -DMIOPEN_USER_DB_PATH=~/MIOpen/build/MIOpenUserDB \
+          "-DMIOPEN_TEST_FLAGS=--verbose --disable-verification-cache"
+    cd build
+    make -j $(nproc) MIOpenDriver
+}
+
+
+test_MIOpen_configs()
+{
+    ##
+    ## Test MIOpen config
+    ##
+    MIOPEN_TEST_DIR=~/llvm-project-mlir/mlir/utils/jenkins/miopen-tests/
+    # copy artifacts
+    cp -r /data/MIOpenUserDB/ ~/MIOpen/build/
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 1 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 2 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 4 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+
+    rm -r ~/MIOpen/build/MIOpenUserDB
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 1 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 2 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+    ${MIOPEN_TEST_DIR}/miopen_validate.sh --layout NCHW --direction 4 --dtype fp16 --no-tuning < ${MIOPEN_TEST_DIR}/resnet50-miopen-configs
+}
+
 
 PR_failed()
 {
@@ -101,10 +165,10 @@ while getopts "hxmib:" opt; do
 done
 
 
-cd ~/llvm-project-mlir/
-rm -rf build
-mkdir build
-cd build
+#cd ~/llvm-project-mlir/
+#rm -rf build
+#mkdir build
+#cd build
 
 case ${build_opt} in
     0)
@@ -114,7 +178,13 @@ case ${build_opt} in
         PR_enable_all $xdlops
         ;;
     2)
-        PR_failed
+        build_staticLib
+        ;;
+    3)
+        build_MIOpen_with_MLIR
+        ;;
+    4)
+        test_MIOpen_configs
         ;;
     *)
         echo "unknown build option"

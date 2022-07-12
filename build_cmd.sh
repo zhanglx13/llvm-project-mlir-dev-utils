@@ -5,6 +5,7 @@ printUsage()
     echo "Usage: cmd_build.sh -b <options>|-m|-i"
     echo "  options:"
     echo "    0: PR_shared_library_build_and_fixed_tests"
+    echo "    1: enable all tests"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable tests for xdlops"
@@ -21,6 +22,24 @@ PR_shared_library_build_and_fixed_tests()
           -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
           -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=0 \
           -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
+          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
+          -DLLVM_LIT_ARGS=-v \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+          ../
+    ninja
+}
+
+##
+## $1: enable xdlops or not (0: disable 1: enable)
+##
+PR_enable_all()
+{
+    cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
+          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
           -DLLVM_LIT_ARGS=-v \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -92,6 +111,9 @@ case ${build_opt} in
         PR_shared_library_build_and_fixed_tests $xdlops
         ;;
     1)
+        PR_enable_all $xdlops
+        ;;
+    2)
         PR_failed
         ;;
     *)

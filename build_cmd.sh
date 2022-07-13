@@ -13,7 +13,7 @@ printUsage()
     echo "    6: shared library and fixed tests"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
-    echo "-x: enable tests for xdlops"
+    echo "-x: enable xdlops"
 }
 
 ##
@@ -60,6 +60,7 @@ PR_enable_all()
 
 ##
 ## stage: Shared library build and random tests
+## $1: xdlops
 ##
 sharedLib_random()
 {
@@ -68,11 +69,11 @@ sharedLib_random()
     cmake . -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=0 \
-          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
           -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_RANDOM_DATA_SEED=1 \
           -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
-          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=0 \
+          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
           -DMLIR_MIOPEN_DRIVER_TIMING_TEST_ENABLED=1 \
           -DLLVM_LIT_ARGS=-v \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1
@@ -82,6 +83,7 @@ sharedLib_random()
 
 ##
 ## stage: Shared library build and fixed tests
+## $1: xdlops
 ##
 sharedLib_fixed()
 {
@@ -90,7 +92,7 @@ sharedLib_fixed()
     make . -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
          -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=0 \
-         -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=1 \
+         -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=1 \
          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
@@ -155,23 +157,6 @@ test_MIOpen_configs()
 }
 
 
-PR_failed()
-{
-    cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo \
-          -DCMAKE_C_COMPILER=clang \
-          -DCMAKE_CXX_COMPILER=clang++ \
-          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
-          -DLLVM_LIT_ARGS=-v \
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          ../
-    ninja
-}
-
 
 OPTIND=1
 
@@ -231,10 +216,10 @@ case ${build_opt} in
         test_MIOpen_configs
         ;;
     5)
-        sharedLib_random
+        sharedLib_random $xdlops
         ;;
     6)
-        sharedLib_fixed
+        sharedLib_fixed $xdlops
         ;;
     *)
         echo "unknown build option"

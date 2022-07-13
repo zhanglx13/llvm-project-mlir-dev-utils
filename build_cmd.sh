@@ -9,6 +9,8 @@ printUsage()
     echo "    2: build static library libMLIRMIOpen"
     echo "    3: build MIOpen with libMLIRMIOpen"
     echo "    4: test MIOpen configs"
+    echo "    5: shared library and random tests"
+    echo "    6: shared library and fixed tests"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable tests for xdlops"
@@ -54,6 +56,48 @@ PR_enable_all()
           ../
     cd build
     ninja
+}
+
+##
+## stage: Shared library build and random tests
+##
+sharedLib_random()
+{
+    cd ~/llvm-project-mlir/
+    rm -f build/CMakeCache.txt
+    cmake . -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=0 \
+          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
+          -DMLIR_MIOPEN_DRIVER_RANDOM_DATA_SEED=1 \
+          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
+          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=0 \
+          -DMLIR_MIOPEN_DRIVER_TIMING_TEST_ENABLED=1 \
+          -DLLVM_LIT_ARGS=-v \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+    cd build
+    ninja check-mlir-miopen
+}
+
+##
+## stage: Shared library build and fixed tests
+##
+sharedLib_fixed()
+{
+    cd ~/llvm-project-mlir/
+    rm -f build/CMakeCache.txt
+    make . -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+         -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
+         -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=0 \
+         -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=1 \
+         -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
+         -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=1 \
+         -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
+         -DLLVM_LIT_ARGS=-v \
+         -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+    cd build
+    ninja check-mlir check-mlir-miopen
 }
 
 build_staticLib()
@@ -185,6 +229,12 @@ case ${build_opt} in
         ;;
     4)
         test_MIOpen_configs
+        ;;
+    5)
+        sharedLib_random
+        ;;
+    6)
+        sharedLib_fixed
         ;;
     *)
         echo "unknown build option"

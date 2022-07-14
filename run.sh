@@ -91,7 +91,8 @@ driverPipeline=0
 cpuPipeline=0
 wrapper_func=0
 targetIRFunc="miopen"
-while getopts "hrlo:m:vc:gi:dwt:f" opt; do
+f16Threshold="0.25"
+while getopts "hrlo:m:vc:gi:dwt:fe:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -133,6 +134,9 @@ while getopts "hrlo:m:vc:gi:dwt:f" opt; do
         f)
             printFirst=1
             ;;
+        e)
+            f16Threshold=$OPTARG
+            ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
             exit 1
@@ -158,14 +162,17 @@ if [[ $callMiopenGen -eq 1 ]]; then
     ## The following config failed in the nightly run 2022-07-12
     #MIOPEN_GEN_CMD="--operation conv2d -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=256 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=230 -in_w=230 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=0 --padding_w=0 --conv_stride_h=2 --conv_stride_w=2 -pv -rand 1 --rand_type float --x2"
 
-    ## failed with threshold=15% from padding_kernel_gemmN.mlir line 6
-    ## 15% failed but 20% passed
-    MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2  -pv -rand 1 --rand_type float --x2"
+    ## padding_kernel_gemmN.mlir line 6
+    #MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2  -pv -rand 1 --rand_type float --x2"
 
-    ## failed with threshold=15% from conv2d_host_validation_f16_bwd.mlir line 71
+    ## padding_kernel_gemmN.mlir line 1
+    ## 15% failed but 20% passed
+    #MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkcyx -in_layout=ngchw -out_layout=ngkhw -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2 -pv -rand 1 --rand_type float --x2"
+
+    ## conv2d_host_validation_f16_bwd.mlir line 36
     ## even 20% failed
     ## 25% seemed to work
-    #MIOPEN_GEN_CMD=" --operation=conv2d_bwd_weight -t f16 -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -batchsize=16 -in_channels=64 -out_channels=64 -in_h=14 -in_w=14 -fil_h=1 -fil_w=1 --dilation_h=1 --dilation_w=1 --padding_h=1 --padding_w=1 --conv_stride_h=1 --conv_stride_w=1 -p=false -pv -rand 1 --rand_type float -x2"
+    MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -in_channels=256 -batchsize=64 -in_h=56 -in_w=56 -out_channels=64 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h=1 -padding_w=1 -pv -rand 1 --rand_type float -x2"
 
     ## last config in fwd_i8
     #MIOPEN_GEN_CMD="--operation conv2d -t i8 -x2 --fil_layout kcyx --in_layout nchw --out_layout nkhw --batchsize 256 --in_channels 64 --in_h 56 --in_w 56 --out_channels 64 --fil_h 3 --fil_w 3 --dilation_h 1 --dilation_w 1 --conv_stride_h 1 --conv_stride_w 1 --padding_h 1 --padding_w 1"
@@ -175,7 +182,8 @@ if [[ $callMiopenGen -eq 1 ]]; then
     ################################
     ## miopen-gen output filename ##
     ################################
-    DRIVER_INPUT="miopen-gen_result_gpuKernel_cpuV_gpuOps.mlir"
+    DRIVER_INPUT="miopen-gen_result.mlir"
+    echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} > ${DRIVER_INPUT}"
     #outputFilename="miopen-gen_result_gpuKernel_cpuV.mlir"
     #######################
     ## Invoke miopen-gen ##
@@ -186,8 +194,9 @@ if [[ $callMiopenGen -eq 1 ]]; then
 
     ## no -prc, i.e. do not generate cpu kernel
     ## i.e. generate gpu kernel
-    ${MIOPEN_GEN} -pv ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
+    ${MIOPEN_GEN} -threshold=${f16Threshold} -pv ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
 else
+    echo "Read input mlir from $inputMLIR"
     DRIVER_INPUT=$inputMLIR
 fi
 
@@ -196,21 +205,34 @@ fi
 ##
 if [[ $driverPipeline -eq 1 ]]; then
     ## go through the driver
+    printf "Running mlir-miopen-driver ${DRIVER_INPUT} > driver_output.mlir ... "
     ${MLIR_MIOPEN_DRIVER} ${DRIVER_INPUT} > driver_output.mlir
+    echo " Done!!"
     ## get the lowest IR before execution
     if [[ $lowestIR -eq 1 ]]; then
+        printf "Generate lowest IR for ${targetIRFunc} and written to ${lowestIRFilename}"
         print_lowestIR driver_output.mlir ${targetIRFunc} ${lowestIRFilename}
+        echo " Done!!"
     fi
     ## Execute the generated IR
     if [[ $run -eq 1 ]]; then
+        printf "Running mlir-rocm-runner ${inputToRocmRunner} > tmp_result ... "
         ${MLIR_ROCM_RUNNER} $inputToRocmRunner > tmp_result
+        echo " Done!!"
         ## process result according to whether there is a verify function
         if [[ $hasVerify -eq 1 ]]; then
             result=$(tail -1 tmp_result)
-            echo "result: $result  (${DRIVER_INPUT})"
+            num=${result:1:1}
+            msg="Pass!!"
+            if [[ $num == "0" ]]; then
+                msg="Fail!!"
+            fi
+            echo "verification result: $msg (threshold=${f16Threshold})"
         elif [[ $printFirst -eq 1 ]]; then
-            head -1 tmp_result
+            result=$(head -1 tmp_result)
+            echo "First line of output: $result"
         else
+            echo "Output:"
             cat tmp_result
         fi
         rm -f tmp_result
@@ -219,9 +241,13 @@ else
     ##
     ## go through the cpu pipeline
     ##
+    printf "Running mlir-opt ..."
     ${MLIR_OPT} -pass-pipeline='gpu.module(strip-debuginfo,convert-gpu-to-rocdl{index-bitwidth=32 runtime=HIP},gpu-to-hsaco{chip=%chip})' > opt_output.mlir
+    echo " Done!!"
     if [[ $run -eq 1 ]]; then
+        printf "Running mlir-cpu-runner $inputToCpuRunner ... "
         ${MLIR_CPU_RUNNER} $inputToCpuRunner
+        echo " Done!!"
     fi
 fi
 

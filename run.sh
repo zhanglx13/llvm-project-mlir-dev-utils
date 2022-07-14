@@ -39,6 +39,9 @@ MLIR_CPU_RUNNER="${UP_BIN_DIR}/mlir-cpu-runner --shared-libs=${LIB_MLIR_ROCM_RUN
 MIOPEN_GEN="${BIN_DIR}/miopen-gen"
 MIOPEN_OPT="${BIN_DIR}/miopen-opt"
 MLIR_OPT="${UP_BIN_DIR}/mlir-opt"
+##
+## To run rocm-runner manually:
+## ./bin/mlir-miopen-driver -c | ./bin/mlir-rocm-runner --shared-libs=./external/llvm-project/llvm/lib/libmlir_rocm_runtime.so,./lib/libconv-validation-wrappers.so,./external/llvm-project/llvm/lib/libmlir_runner_utils.so --entry-point-result=void
 
 ## lower the driver output to the lowest IR
 ## and extract the miopen_conv2d_xxx_0_gpu wrapper function
@@ -199,7 +202,7 @@ if [[ $driverPipeline -eq 1 ]]; then
             if [[ $num == "0" ]]; then
                 msg="Fail!!"
             fi
-            echo "verification result: $msg (threshold=${f16Threshold})"
+            echo "$msg (threshold=${f16Threshold})"
         elif [[ $printFirst -eq 1 ]]; then
             result=$(head -1 tmp_result)
             echo "First line of output: $result"

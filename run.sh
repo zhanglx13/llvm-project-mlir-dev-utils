@@ -8,6 +8,7 @@ printUsage()
     echo "Options:"
     echo "  -i <input mlir filename>"
     echo "  -g: call miopen-gen to generate the input"
+    echo "      -n <index> choose the configs from config.sh (default: 0)"
     echo "  Note: one of -i or -g must be specified!"
     echo "  -d: choose the rocm pipeline"
     echo "      If not set, choose the cpu pipeline"
@@ -20,6 +21,7 @@ printUsage()
     echo "      -m <inputToRocmRunner> input filenmae to rocm-runner (default: driver_output.mlir)"
     echo "      -c <inputToCpuRunner> input filename to cpu-runner (default: opt_output.mlir)"
     echo "      -v: has verify function ==> print the last line"
+    echo "          -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
     echo "      -f: print the first line"
     echo "      if -v and -f are not specified, the whole result is printed"
 }
@@ -92,7 +94,8 @@ cpuPipeline=0
 wrapper_func=0
 targetIRFunc="miopen"
 f16Threshold="0.25"
-while getopts "hrlo:m:vc:gi:dwt:fe:" opt; do
+config_index=0
+while getopts "hrlo:m:vc:gi:dwt:fe:n:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -137,6 +140,9 @@ while getopts "hrlo:m:vc:gi:dwt:fe:" opt; do
         e)
             f16Threshold=$OPTARG
             ;;
+        n)
+            config_index=$OPTARG
+            ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
             exit 1
@@ -148,50 +154,16 @@ while getopts "hrlo:m:vc:gi:dwt:fe:" opt; do
     esac
 done
 
+source configs.sh
+
 ##
 ## Where to get the input mlir
 ##
 if [[ $callMiopenGen -eq 1 ]]; then
-    #############
-    ## Configs ##
-    #############
-    ## MLIR408
-    ## The following config should fail on MI200 but passes
-    #MIOPEN_GEN_CMD="--operation conv2d -t f16 --fil_layout kcyx --in_layout nchw --out_layout nkhw --batchsize 128 --in_channels 8 --in_h 8 --in_w 8 --out_channels 128 --fil_w 4 --fil_h 4 --dilation_h 1 --dilation_w 1 --conv_stride_h 1 --conv_stride_w 1 --padding_h 0 --padding_w 0 -p=false -x2"
-
-    ## The following config failed in the nightly run 2022-07-12
-    #MIOPEN_GEN_CMD="--operation conv2d -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=256 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=230 -in_w=230 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=0 --padding_w=0 --conv_stride_h=2 --conv_stride_w=2 -pv -rand 1 --rand_type float --x2"
-
-    ## padding_kernel_gemmN.mlir line 6
-    #MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2  -pv -rand 1 --rand_type float --x2"
-
-    ## padding_kernel_gemmN.mlir line 1
-    ## 15% failed but 20% passed
-    #MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkcyx -in_layout=ngchw -out_layout=ngkhw -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2 -pv -rand 1 --rand_type float --x2"
-
-    ## conv2d_host_validation_f16_bwd.mlir line 36
-    ## even 20% failed
-    ## 25% seemed to work
-    MIOPEN_GEN_CMD="--operation conv2d_bwd_weight -t f16 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -in_channels=256 -batchsize=64 -in_h=56 -in_w=56 -out_channels=64 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h=1 -padding_w=1 -pv -rand 1 --rand_type float -x2"
-
-    ## last config in fwd_i8
-    #MIOPEN_GEN_CMD="--operation conv2d -t i8 -x2 --fil_layout kcyx --in_layout nchw --out_layout nkhw --batchsize 256 --in_channels 64 --in_h 56 --in_w 56 --out_channels 64 --fil_h 3 --fil_w 3 --dilation_h 1 --dilation_w 1 --conv_stride_h 1 --conv_stride_w 1 --padding_h 1 --padding_w 1"
-
-    ## the last config in resnet50 for convfp16_fwd
-    #MIOPEN_GEN_CMD="--operation conv2d -t f16 -x2 --fil_layout kcyx --in_layout nchw --out_layout nkhw --batchsize 256 --in_channels 64 --in_h 56 --in_w 56 --out_channels 64 --fil_h 3 --fil_w 3 --dilation_h 1 --dilation_w 1 --conv_stride_h 1 --conv_stride_w 1 --padding_h 1 --padding_w 1"
-    ################################
-    ## miopen-gen output filename ##
-    ################################
+    configName=config${config_index}
+    MIOPEN_GEN_CMD=${!configName}
     DRIVER_INPUT="miopen-gen_result.mlir"
     echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} > ${DRIVER_INPUT}"
-    #outputFilename="miopen-gen_result_gpuKernel_cpuV.mlir"
-    #######################
-    ## Invoke miopen-gen ##
-    #######################
-    ## -prc genCPUKernel
-    ## -pv genCPUValidation
-    #${MIOPEN_GEN} -prc -pv ${miopen_gen_CMD} -o miopen-gen_result_cpuKernel_cpuV.mlir
-
     ## no -prc, i.e. do not generate cpu kernel
     ## i.e. generate gpu kernel
     ${MIOPEN_GEN} -threshold=${f16Threshold} -pv ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}

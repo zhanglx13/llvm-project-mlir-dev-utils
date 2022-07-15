@@ -80,3 +80,7 @@ config116="--operation conv2d -t f16 --fil_layout kcyx --in_layout nchw --out_la
 ## line 20 CHECK_RESNET101_NCHW_CONFIG2_WRW
 ## nightly-all 2022-07-14 Fixed e2e build
 config117="--operation conv2d_bwd_weight -t f32 -p=false  -fil_layout=gkcyx -in_layout=ngchw -out_layout=ngkhw -batchsize=256 -groupsize=32 -in_channels=1024 -out_channels=1024 -in_h=7 -in_w=7 -fil_h=3 -fil_w=3 --dilation_h=1 --dilation_w=1 --padding_h=1 --padding_w=1 --conv_stride_h=1 --conv_stride_w=1 "
+
+
+## Used for experimentation
+config13="-rand 1 --rand_type float -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -batchsize=64 -in_channels=4 -out_channels=64 -in_h=32 -in_w=32 -fil_h=3 -fil_w=3 --dilation_h=1 --dilation_w=1 --padding_h=0 --padding_w=0 --conv_stride_h=1 --conv_stride_w=1 -p=false -t f16"

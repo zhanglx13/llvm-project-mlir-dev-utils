@@ -9,6 +9,7 @@ printUsage()
     echo "  -i <input mlir filename>"
     echo "  -g: call miopen-gen to generate the input"
     echo "      -n <index> choose the configs from config.sh (default: 0)"
+    echo "      -b <validator> choose between cpu and gpu"
     echo "  Note: one of -i or -g must be specified!"
     echo "  -d: choose the rocm pipeline"
     echo "      If not set, choose the cpu pipeline"
@@ -20,9 +21,7 @@ printUsage()
     echo "  -r: invoke the runner tool to execute the IR (both pipeline)"
     echo "      -m <inputToRocmRunner> input filenmae to rocm-runner (default: driver_output.mlir)"
     echo "      -c <inputToCpuRunner> input filename to cpu-runner (default: opt_output.mlir)"
-    echo "      -v <validator>: has verify function ==> print the last line"
-    echo "         validator is default to cpu"
-    echo "         set -v gpu to choose gpu validation"
+    echo "      -v: has verify function ==> print the last line"
     echo "         -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
     echo "      -f: print the first line"
     echo "      if -v and -f are not specified, the whole result is printed"
@@ -92,7 +91,7 @@ lowestIRFilename="lowest.mlir"
 inputToRocmRunner="driver_output.mlir"
 inputToCpuRunner="opt_output.mlir"
 hasVerify=0
-validator="-pv"
+validator=""
 printFirst=0
 callMiopenGen=0
 driverPipeline=0
@@ -101,7 +100,7 @@ wrapper_func=0
 targetIRFunc="miopen"
 f16Threshold="0.25"
 config_index=0
-while getopts "hrlo:m:v:c:gi:dwt:fe:n:" opt; do
+while getopts "hrlo:m:vc:gi:dwt:fe:n:b:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -121,9 +120,6 @@ while getopts "hrlo:m:v:c:gi:dwt:fe:n:" opt; do
             ;;
         v)
             hasVerify=1
-            if [[ $OPTARG == "gpu" ]];then
-                validator="-pv_with_gpu"
-            fi
             ;;
         c)
             inputToCpuRunner=$OPTARG
@@ -136,6 +132,13 @@ while getopts "hrlo:m:v:c:gi:dwt:fe:n:" opt; do
             ;;
         d)
             driverPipeline=1
+            ;;
+        b)
+            if [[ $OPTARG = "gpu" ]];then
+                validator="-pv_with_gpu"
+            else
+                validator="-pv"
+            fi
             ;;
         w)
             wrapper_func=1
@@ -165,7 +168,6 @@ done
 
 source configs.sh
 
-##
 ## Where to get the input mlir
 ##
 if [[ $callMiopenGen -eq 1 ]]; then
@@ -216,7 +218,7 @@ if [[ $driverPipeline -eq 1 ]]; then
             echo "Output:"
             cat tmp_result
         fi
-        rm -f tmp_result
+        #rm -f tmp_result
     fi
 else
     ##

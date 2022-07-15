@@ -14,6 +14,8 @@ printUsage()
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable xdlops"
+    echo "-v <validator>: cpu or gpu validation"
+    echo "   gpu validation is chosen only when validation=gpu"
 }
 
 ##
@@ -61,6 +63,7 @@ PR_enable_all()
 ##
 ## stage: Shared library build and random tests
 ## $1: xdlops
+## $2: gpu validation
 ##
 sharedLib_random()
 {
@@ -73,7 +76,7 @@ sharedLib_random()
           -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
           -DMLIR_MIOPEN_DRIVER_RANDOM_DATA_SEED=1 \
           -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
-          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=0 \
+          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=$2 \
           -DMLIR_MIOPEN_DRIVER_TIMING_TEST_ENABLED=1 \
           -DLLVM_LIT_ARGS=-v \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1
@@ -84,6 +87,7 @@ sharedLib_random()
 ##
 ## stage: Shared library build and fixed tests
 ## $1: xdlops
+## $2: gpu validation
 ##
 sharedLib_fixed()
 {
@@ -95,7 +99,7 @@ sharedLib_fixed()
          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=1 \
-         -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
+         -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=$2 \
          -DLLVM_LIT_ARGS=-v \
          -DCMAKE_EXPORT_COMPILE_COMMANDS=1
     cd build
@@ -164,7 +168,8 @@ build_opt=0
 check_mlir=0
 check_miopen=0
 xdlops=0
-while getopts "hxmib:" opt; do
+gpu_validation=0
+while getopts "hxmib:v" opt; do
     case "$opt" in
         h)
             printUsage
@@ -181,6 +186,11 @@ while getopts "hxmib:" opt; do
             ;;
         x)
             xdlops=1
+            ;;
+        v)
+            if [[ $OPTARG == "gpu" ]];then
+                gpu_validation=1
+            fi
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
@@ -216,10 +226,10 @@ case ${build_opt} in
         test_MIOpen_configs
         ;;
     5)
-        sharedLib_random $xdlops
+        sharedLib_random $xdlops ${gpu_validation}
         ;;
     6)
-        sharedLib_fixed $xdlops
+        sharedLib_fixed $xdlops ${gpu_validation}
         ;;
     *)
         echo "unknown build option"

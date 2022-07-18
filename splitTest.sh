@@ -3,7 +3,8 @@
 ##
 ## $1: input test file to split
 ## $2: dest dir to put the result unit tests
-##
+## $3: datatype to extract
+##     if not found, split the whole file
 
 DEST_DIR=$2
 INPUT_TEST=$1
@@ -12,14 +13,28 @@ INPUT_TEST_NAME=${INPUT_TEST%.mlir}
 INPUT_TEST_NAME=${INPUT_TEST_NAME##*/}
 
 count=0
+searchStr="// RUN:"
+outputTail=""
+if [[ $# -eq 3 ]]; then
+    ##
+    ## Extract tests for data type specified by $3
+    ##
+    echo "input: ${INPUT_TEST_NAME}"
+    echo "output dir: ${DEST_DIR}"
+    echo "Look for data type $3"
+    searchStr="-t $3"
+    outputTail="_$3"
+fi
+
 while IFS= read -r line
 do
-    ## For each line of RUN
-    if [[ $line == *"// RUN:"* ]]; then
+    ## For each line of $searchStr but do not include lines with FIXME
+    if [[ $line == *"$searchStr"* ]] && [[ $line != *"FIXME"* ]]; then
         ## Extract the check_prefix
-        check_prefix=$(echo `expr match "$line" '.*\(CHECK.*\)'`)
+        checkPrefix=$(echo `expr match "$line" '.*\(--check-prefix=.*\)'`)
+        check_prefix=${checkPrefix#--check-prefix=}
         ## Construct the unit test filename
-        output_filename=${DEST_DIR}/${INPUT_TEST_NAME}_${check_prefix}.mlir
+        output_filename=${DEST_DIR}/${INPUT_TEST_NAME}_${check_prefix}${outputTail}.mlir
         echo "${output_filename}"
         ## Write the RUN and its corresponding CHECK into the output
         echo $line > ${output_filename}
@@ -27,4 +42,4 @@ do
         ((count++))
     fi
 done < ${INPUT_TEST}
-echo "processed $count RUN"
+echo "processed $count lines"

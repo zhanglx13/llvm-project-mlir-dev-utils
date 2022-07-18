@@ -16,6 +16,8 @@ printUsage()
     echo "-x: enable xdlops"
     echo "-v <validator>: cpu or gpu validation"
     echo "   gpu validation is chosen only when validation=gpu"
+    echo "-r <rand_seed>: choose how to initalize inputs randomly"
+    echo "                0, 1, none, or fixed"
 }
 
 ##
@@ -64,6 +66,7 @@ PR_enable_all()
 ## stage: Shared library build and random tests
 ## $1: xdlops
 ## $2: gpu validation
+## $3: random seed: 0, 1, none, or fixed
 ##
 sharedLib_random()
 {
@@ -74,7 +77,7 @@ sharedLib_random()
           -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=0 \
           -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
           -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_RANDOM_DATA_SEED=1 \
+          -DMLIR_MIOPEN_DRIVER_RANDOM_DATA_SEED=$3 \
           -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
           -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=$2 \
           -DMLIR_MIOPEN_DRIVER_TIMING_TEST_ENABLED=1 \
@@ -164,12 +167,13 @@ test_MIOpen_configs()
 
 OPTIND=1
 
-build_opt=0
+build_opt=1000
 check_mlir=0
 check_miopen=0
 xdlops=0
 gpu_validation=0
-while getopts "hxmib:v" opt; do
+rand_seed=1
+while getopts "hxmib:v:r:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -191,6 +195,9 @@ while getopts "hxmib:v" opt; do
             if [[ $OPTARG == "gpu" ]];then
                 gpu_validation=1
             fi
+            ;;
+        r)
+            rand_seed=$OPTARG
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
@@ -226,16 +233,17 @@ case ${build_opt} in
         test_MIOpen_configs
         ;;
     5)
-        sharedLib_random $xdlops ${gpu_validation}
+        sharedLib_random $xdlops ${gpu_validation} ${rand_seed}
         ;;
     6)
         sharedLib_fixed $xdlops ${gpu_validation}
         ;;
     *)
-        echo "unknown build option"
+        echo "unknown build option $OPTARG"
         ;;
 esac
 
+cd ~/llvm-project-mlir/build
 if [[ ${check_mlir} -eq 1 ]]; then
     ninja check-mlir
 fi

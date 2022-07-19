@@ -10,6 +10,7 @@ config1="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkcyx -in_lay
 
 ## line 6 CHECK_RESNET50_CONFIG4
 ## CPU validation failed
+## When inputs are initialized with all 2.0,
 config0="--operation conv2d_bwd_weight -t f16 -p=false -fil_layout=gkyxc -in_layout=nhwgc -out_layout=nhwgk -batchsize=64 -groupsize=1 -in_channels=3 -out_channels=64 -in_h=224 -in_w=224 -fil_h=7 -fil_w=7 --dilation_h=1 --dilation_w=1 --padding_h=3 --padding_w=3 --conv_stride_h=2 --conv_stride_w=2   -rand 1 --rand_type float --x2"
 
 
@@ -47,6 +48,12 @@ config8="-rand 1 -x2 --rand_type float --operation conv2d_bwd_weight -t f16 --fi
 ## line 15 CHECK_ISSUE_127_7
 config12="-rand 1 -x2 --rand_type float --operation conv2d_bwd_weight -t f16 --fil_layout kyxc --in_layout nhwc --out_layout nhwk --batchsize 64 --in_channels 1024 --in_h 14 --in_w 14 --out_channels 256 --fil_w 1 --fil_h 1 --dilation_h 1 --dilation_w 1 --conv_stride_h 1 --conv_stride_w 1 --padding_h 0 --padding_w 0"
 
+# line 35 CHECK_ISSUE_127_17
+config14="-rand 1 -x2 --rand_type float --operation conv2d_bwd_weight -t f16 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -in_channels=256 -batchsize=128 -in_h=7 -in_w=7 -out_channels=512 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h=1 -padding_w=1"
+
+# line 54 CHECK_ISSUE_71_4
+config15="-rand none -x2 --rand_type float -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -batchsize=64 -in_channels=32 -out_channels=32 -in_h=14 -in_w=14 -fil_h=1 -fil_w=1 --dilation_h=1 --dilation_w=1 --padding_h=1 --padding_w=1 --conv_stride_h=2 --conv_stride_w=2 --operation=conv2d_bwd_weight -t f16 -p=false"
+
 #########################################
 ## conv2d_host_validation_f16_fwd.mlir ##
 #########################################
@@ -83,4 +90,4 @@ config117="--operation conv2d_bwd_weight -t f32 -p=false  -fil_layout=gkcyx -in_
 
 
 ## Used for experimentation
-config13="-rand 1 --rand_type float -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -batchsize=64 -in_channels=4 -out_channels=64 -in_h=32 -in_w=32 -fil_h=3 -fil_w=3 --dilation_h=1 --dilation_w=1 --padding_h=0 --padding_w=0 --conv_stride_h=1 --conv_stride_w=1 -p=false -t f16"
+config13="-rand 1 --rand_type float -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -batchsize=64 -in_channels=4 -out_channels=64 -in_h=32 -in_w=32 -fil_h=3 -fil_w=3 --dilation_h=1 --dilation_w=1 --padding_h=0 --padding_w=0 --conv_stride_h=1 --conv_stride_w=1 -p=false -t bf16"

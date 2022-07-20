@@ -119,11 +119,11 @@ while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:s" opt; do
         d)
             if [[ $OPTARG == "cpu" ]];then
                 driverPipeline=0
-            elif [[ $OPTARG == "gpu" ]];then
+            elif [[ $OPTARG == "rocm" ]];then
                 driverPipeline=1
             else
                 echo "Unrecognized pipeline: -d $OPTARG"
-                echo "Choose either -d cpu or -d gpu"
+                echo "Choose either -d cpu or -d rocm"
                 exit 0
             fi
             ;;

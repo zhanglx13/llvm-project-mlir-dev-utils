@@ -3,28 +3,29 @@
 ## Usage
 printUsage()
 {
-    echo "Later ..."
-    echo "Usage: run.sh -i <inputFileName>|-g [options]"
-    echo "Options:"
-    echo "  -i <input mlir filename>"
+    echo "Usage: run.sh <input options> <runner options> <lowering options>"
+    echo "Input Options: (default: -g -n 0 -b cpu)"
+    echo "  -i: <input mlir filename>"
     echo "  -g: call miopen-gen to generate the input"
     echo "      -n <index> choose the configs from config.sh (default: 0)"
-    echo "      -b <validator> choose between cpu and gpu"
-    echo "  Note: one of -i or -g must be specified!"
-    echo "  -d: choose the rocm pipeline"
-    echo "      If not set, choose the cpu pipeline"
+    echo "      -b <validator> choose between cpu and gpu (default: cpu)"
+    echo "Runner Options:"
+    echo "  -d <runner>: choose between rocm and cpu pipeline (default: rocm)"
+    echo "  -r: invoke the runner tool to execute the IR (both pipeline)"
+    echo "      Input to runner:"
+    echo "        -m <inputToRocmRunner> input filename to rocm-runner (default: driver_output.mlir)"
+    echo "        -c <inputToCpuRunner> input filename to cpu-runner (default: opt_output.mlir)"
+    echo "      Print options:"
+    echo "        -v: has verify function ==> print the last line"
+    echo "            -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
+    echo "        -f: print the first line"
+    echo "        if -v and -f are not specified, the whole result is printed"
+    echo "Lowering Options:"
     echo "  -l: In the rocm pipeline, generate the lowest IR before execution"
     echo "      use -o <lowestIRFilename> to secify the filename (default: lowest.mlir)"
     echo "      use -t <targetIRFunc> to specify the function IR to print (default: miopen)"
     echo "          targetIRFunc=all: print the whole file"
     echo "          targetIRFunc=0: print the wrapper function, which is the same as targetFunc=miopen"
-    echo "  -r: invoke the runner tool to execute the IR (both pipeline)"
-    echo "      -m <inputToRocmRunner> input filenmae to rocm-runner (default: driver_output.mlir)"
-    echo "      -c <inputToCpuRunner> input filename to cpu-runner (default: opt_output.mlir)"
-    echo "      -v: has verify function ==> print the last line"
-    echo "         -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
-    echo "      -f: print the first line"
-    echo "      if -v and -f are not specified, the whole result is printed"
 }
 
 ## mlir tools
@@ -91,69 +92,73 @@ lowestIRFilename="lowest.mlir"
 inputToRocmRunner="driver_output.mlir"
 inputToCpuRunner="opt_output.mlir"
 hasVerify=0
-validator=""
+validator="-pv"
 printFirst=0
-callMiopenGen=0
-driverPipeline=0
-cpuPipeline=0
+callMiopenGen=1
+driverPipeline=1
 wrapper_func=0
 targetIRFunc="miopen"
 f16Threshold="0.25"
 config_index=0
-while getopts "hrlo:m:vc:gi:dwt:fe:n:b:" opt; do
+print_lowering_step=0
+while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:s" opt; do
     case "$opt" in
         h)
             printUsage
             exit 0
             ;;
-        r)
-            run=1
-            ;;
-        l)
-            lowestIR=1
-            ;;
-        o)
-            lowestIRFilename=$OPTARG
-            ;;
-        m)
-            inputToRocmRunner=$OPTARG
-            ;;
-        v)
-            hasVerify=1
+        b)
+            if [[ $OPTARG == "gpu" ]];then
+                validator="-pv_with_gpu"
+            fi
             ;;
         c)
             inputToCpuRunner=$OPTARG
+            ;;
+        d)
+            if [[ $OPTARG == "cpu" ]];then
+                driverPipeline=0
+            fi
+            ;;
+        e)
+            f16Threshold=$OPTARG
+            ;;
+        f)
+            printFirst=1
             ;;
         g)
             callMiopenGen=1
             ;;
         i)
             inputMLIR=$OPTARG
+            callMiopenGen=0
             ;;
-        d)
-            driverPipeline=1
+        l)
+            lowestIR=1
             ;;
-        b)
-            if [[ $OPTARG = "gpu" ]];then
-                validator="-pv_with_gpu"
-            else
-                validator="-pv"
-            fi
+        m)
+            inputToRocmRunner=$OPTARG
             ;;
-        w)
-            wrapper_func=1
+        n)
+            config_index=$OPTARG
+            ;;
+        o)
+            lowestIRFilename=$OPTARG
+            ;;
+        r)
+            run=1
+            ;;
+        s)
+            print_lowering_step=1
             ;;
         t)
             targetIRFunc=$OPTARG
             ;;
-        f)
-            printFirst=1
+        v)
+            hasVerify=1
             ;;
-        e)
-            f16Threshold=$OPTARG
-            ;;
-        n)
-            config_index=$OPTARG
+        w)
+            wrapper_func=1
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2

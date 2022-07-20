@@ -10,7 +10,7 @@ printUsage()
     echo "      -n <index> choose the configs from config.sh (default: 0)"
     echo "      -b <validator> choose between cpu and gpu (default: cpu)"
     echo "Runner Options:"
-    echo "  -d <runner>: choose between rocm and cpu pipeline (default: rocm)"
+    echo "  -d <runner>: choose between rocm and cpu pipeline"
     echo "  -r: invoke the runner tool to execute the IR (both pipeline)"
     echo "      Input to runner:"
     echo "        -m <inputToRocmRunner> input filename to rocm-runner (default: driver_output.mlir)"
@@ -26,6 +26,7 @@ printUsage()
     echo "      use -t <targetIRFunc> to specify the function IR to print (default: miopen)"
     echo "          targetIRFunc=all: print the whole file"
     echo "          targetIRFunc=0: print the wrapper function, which is the same as targetFunc=miopen"
+    echo "  -s: generate intermediate IR of each lowering step and put the results in lowering_IR/"
 }
 
 ## mlir tools
@@ -35,7 +36,7 @@ UP_BIN_DIR=${BUILD_DIR}/external/llvm-project/llvm/bin
 LIB_MLIR_ROCM_RUNTIME=${BUILD_DIR}/external/llvm-project/llvm/lib/libmlir_rocm_runtime.so
 LIB_CONV_VALID=${BUILD_DIR}/lib/libconv-validation-wrappers.so
 LIB_MLIR_RUNNER_UTILS=${BUILD_DIR}/external/llvm-project/llvm/lib/libmlir_runner_utils.so
-MLIR_MIOPEN_DRIVER="${BIN_DIR}/mlir-miopen-driver -c"
+MLIR_MIOPEN_DRIVER="${BIN_DIR}/mlir-miopen-driver"
 MLIR_ROCM_RUNNER="${BIN_DIR}/mlir-rocm-runner --shared-libs=${LIB_MLIR_ROCM_RUNTIME},${LIB_CONV_VALID},${LIB_MLIR_RUNNER_UTILS} --entry-point-result=void"
 MLIR_CPU_RUNNER="${UP_BIN_DIR}/mlir-cpu-runner --shared-libs=${LIB_MLIR_ROCM_RUNTIME},${LIB_MLIR_RUNNER_UTILS} --entry-point-result=void"
 MIOPEN_GEN="${BIN_DIR}/miopen-gen"
@@ -95,7 +96,7 @@ hasVerify=0
 validator="-pv"
 printFirst=0
 callMiopenGen=1
-driverPipeline=1
+driverPipeline=2
 wrapper_func=0
 targetIRFunc="miopen"
 f16Threshold="0.25"
@@ -118,6 +119,12 @@ while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:s" opt; do
         d)
             if [[ $OPTARG == "cpu" ]];then
                 driverPipeline=0
+            elif [[ $OPTARG == "gpu" ]];then
+                driverPipeline=1
+            else
+                echo "Unrecognized pipeline: -d $OPTARG"
+                echo "Choose either -d cpu or -d gpu"
+                exit 0
             fi
             ;;
         e)
@@ -189,12 +196,28 @@ else
 fi
 
 ##
+## Print the result of each lowering step
+## Following the commands in sanity_xdlops.mlir
+##
+if [[ ${print_lowering_step} -eq 1 ]]; then
+    LOWERING_DIR=./lowering_IR
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params ${DRIVER_INPUT} > ${LOWERING_DIR}/0-affix-params.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm ${DRIVER_INPUT} > ${LOWERING_DIR}/1-conv-to-gemm.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise ${DRIVER_INPUT} > ${LOWERING_DIR}/2-blockwise.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise ${DRIVER_INPUT} > ${LOWERING_DIR}/3-threadwise.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering ${DRIVER_INPUT} > ${LOWERING_DIR}/4-gemm-lowering.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops ${DRIVER_INPUT} > ${LOWERING_DIR}/5-sugar-to-loops.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf ${DRIVER_INPUT} > ${LOWERING_DIR}/6-loops-to-cf.mlir
+    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf -convert-miopen-to-gpu ${DRIVER_INPUT} > ${LOWERING_DIR}/7-miopen-to-gpu.mlir
+fi
+
+##
 ## Go through the miopen-driver -c pipeline
 ##
 if [[ $driverPipeline -eq 1 ]]; then
     ## go through the driver
     printf "Running mlir-miopen-driver ${DRIVER_INPUT} > driver_output.mlir ... "
-    ${MLIR_MIOPEN_DRIVER} ${DRIVER_INPUT} > driver_output.mlir
+    ${MLIR_MIOPEN_DRIVER} -c ${DRIVER_INPUT} > driver_output.mlir
     echo " Done!!"
     ## get the lowest IR before execution
     if [[ $lowestIR -eq 1 ]]; then
@@ -225,12 +248,12 @@ if [[ $driverPipeline -eq 1 ]]; then
         fi
         #rm -f tmp_result
     fi
-else
+elif [[ $driverPipeline -eq 0 ]]; then
     ##
     ## go through the cpu pipeline
     ##
     printf "Running mlir-opt ..."
-    ${MLIR_OPT} -pass-pipeline='gpu.module(strip-debuginfo,convert-gpu-to-rocdl{index-bitwidth=32 runtime=HIP},gpu-to-hsaco{chip=%chip})' > opt_output.mlir
+    ${MLIR_OPT} -pass-pipeline='gpu.module(strip-debuginfo,convert-gpu-to-rocdl{index-bitwidth=32 runtime=HIP},gpu-to-hsaco{chip=gfx90a})' ${DRIVER_INPUT}> opt_output.mlir
     echo " Done!!"
     if [[ $run -eq 1 ]]; then
         printf "Running mlir-cpu-runner $inputToCpuRunner ... "

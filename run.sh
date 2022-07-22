@@ -18,6 +18,7 @@ printUsage()
     echo "      Print options:"
     echo "        -v: has verify function ==> print the last line"
     echo "            -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
+    echo "            -u: use the old verifier function (default is to use to new one)"
     echo "        -f: print the first line"
     echo "        if -v and -f are not specified, the whole result is printed"
     echo "Lowering Options:"
@@ -87,7 +88,8 @@ targetIRFunc="miopen"
 f16Threshold="0.25"
 config_index=0
 print_lowering_step=0
-while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:s" opt; do
+verifyFunc=""
+while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:su" opt; do
     case "$opt" in
         h)
             printUsage
@@ -152,6 +154,9 @@ while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:s" opt; do
         w)
             wrapper_func=1
             ;;
+        u)
+            verifyFunc="-nv=false"
+            ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
             exit 1
@@ -171,10 +176,10 @@ if [[ $callMiopenGen -eq 1 ]]; then
     configName=config${config_index}
     MIOPEN_GEN_CMD=${!configName}
     DRIVER_INPUT="miopen-gen_result.mlir"
-    echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} $validator > ${DRIVER_INPUT}"
+    echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} $validator $verifyFunc > ${DRIVER_INPUT}"
     ## no -prc, i.e. do not generate cpu kernel
     ## i.e. generate gpu kernel
-    ${MIOPEN_GEN} -threshold=${f16Threshold} $validator ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
+    ${MIOPEN_GEN} -threshold=${f16Threshold} $validator $verifyFunc ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
 else
     echo "Read input mlir from $inputMLIR"
     DRIVER_INPUT=$inputMLIR

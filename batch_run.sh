@@ -109,11 +109,14 @@ getConfigTags()
 }
 
 ##
+## Run all configs with a single setting
 ## $1: total number of tests
 ## $2: XDLOPS
 ## $3: VALIDATOR
 ## $4: RESULT_FILENAME
-## %5: BATCH_CONFIG_FILENAME
+## $5: BATCH_CONFIG_FILENAME
+## $6: rand_min
+## $7: rand_max
 batch_run()
 {
     cnt=$1
@@ -121,13 +124,14 @@ batch_run()
     VALIDATOR=$3
     RESULT_FILENAME=$4
     BATCH_CONFIG_FILENAME=$5
-    echo "Running $cnt tests ... "
+    RAND_MIN=$6
+    RAND_MAX=$7
+    echo "Running $cnt tests with rand range [${RAND_MIN}, ${RAND_MAX}] ... "
     echo "Writing results into ${RESULT_FILENAME}"
 
     i=1
     #rm -f ${RESULT_FILENAME}
-    #rm -f ${BATCH_CONFIG_FILENAME}
-    #rm batch_configs.txt
+    rm -f ${BATCH_CONFIG_FILENAME}
     for unittest in ${TEST_DIR}/*
     do
         ## obtain the name of the test
@@ -137,16 +141,39 @@ batch_run()
         testCMD=$(sed -n "/\/\/ RUN:/p" $unittest)
         config=${testCMD%%|*}
         config=${config#*miopen-gen}
-        #echo "$testFileName $config" >> batch_configs.txt
         ## get the tags first
         tags=$(getConfigTags "$config")
+        ## process the config after
         config=$(processConfig "$config")
-        #echo "$testFileName ==> $config" >> ${BATCH_CONFIG_FILENAME}
+        echo "$testFileName ==> $config" >> ${BATCH_CONFIG_FILENAME}
         ## Invoke miopen-gen and execute the result
-        verifyResult=$(${MIOPEN_GEN} $config | ${MLIR_MIOPEN_DRIVER} -c | ${MLIR_ROCM_RUNNER} | tail -1)
+        verifyResult=$(${MIOPEN_GEN} $config -rand_min ${RAND_MIN} -rand_max ${RAND_MAX} | ${MLIR_MIOPEN_DRIVER} -c | ${MLIR_ROCM_RUNNER} | tail -1)
         echo "$verifyResult $tags $testFileName ($i of $cnt)" | tee -a ${RESULT_FILENAME}
         ((i++))
     done
+}
+
+
+##
+## Run batch_run with different settings
+## $1: total number of tests
+## $2: rand range name
+## $3: rand min
+## $4: rand max
+batch_run_all()
+{
+    cnt=$1
+    RAND_RANGE=$2
+    RAND_MIN=$3
+    RAND_MAX=$4
+    SET1="xdlops_pv"
+    SET2="nonxdlops_pv"
+    SET3="xdlops_pv-with-gpu"
+    SET4="nonxdlops_pv-with-gpu"
+    batch_run $cnt "-x2" "-pv"          "verify_f16_${SET1}_${RAND_RANGE}.txt" "batch_config_f16_${SET1}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt ""    "-pv"          "verify_f16_${SET2}_${RAND_RANGE}.txt" "batch_config_f16_${SET2}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt "-x2" "-pv_with_gpu" "verify_f16_${SET3}_${RAND_RANGE}.txt" "batch_config_f16_${SET3}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt ""    "-pv_with_gpu" "verify_f16_${SET4}_${RAND_RANGE}.txt" "batch_config_f16_${SET4}.txt" ${RAND_MIN} ${RAND_MAX}
 }
 
 ##
@@ -161,19 +188,13 @@ do
     ((cnt++))
 done
 
-#RAND_RANGE="smallrand" # rand0 [-1, 1]
-#RAND_RANGE="midrand"   # rand1 [-10, 10]
-#RAND_RANGE="rand2"      # rand2 [-5, 5]
-RAND_RANGE="rand3"      # rand2 [2, 7]
 
-batch_run $cnt "-x2" "-pv"          "verify_f16_xdlops_pv_${RAND_RANGE}.txt"             "test_config.txt"
-
-batch_run $cnt ""    "-pv"          "verify_f16_nonxdlops_pv_${RAND_RANGE}.txt"          "test_config.txt"
-
-batch_run $cnt "-x2" "-pv_with_gpu" "verify_f16_xdlops_pv-with-gpu_${RAND_RANGE}.txt"    "test_config.txt"
-
-batch_run $cnt ""    "-pv_with_gpu" "verify_f16_nonxdlops_pv-with-gpu_${RAND_RANGE}.txt" "test_config.txt"
-
+batch_run_all $cnt "rand0" "-1"  "1"
+batch_run_all $cnt "rand1" "-10" "10"
+batch_run_all $cnt "rand2" "-5"  "5"
+batch_run_all $cnt "rand3" "2"   "7"
+batch_run_all $cnt "rand4" "1"   "5"
+batch_run_all $cnt "rand5" "5"   "10"
 
 exit 0
 

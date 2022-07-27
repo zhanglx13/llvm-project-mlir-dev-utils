@@ -276,12 +276,15 @@ if [[ ${run_all_tests} -eq 1 ]];then
 fi
 
 if [[ ${run_single_test} -eq 1 ]];then
-    TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmK_CHECK_RESNET50_F16_CONFIG1.mlir
+    ## This is the failed test on MI100
+    TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmN_CHECK_RESNET50_CONFIG2.mlir
+    ## This is the failed test on MI200
+    #TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmK_CHECK_RESNET50_F16_CONFIG1.mlir
     echo "running single test ${TEST_FILENAME} ... "
 
     single_run "-x2" "-pv" > bad_test.txt
     single_run "-x2" "-pv_with_gpu" >> bad_test.txt
-    #single_run "" "-pv"
+    single_run "" "-pv"
 fi
 exit 0
 

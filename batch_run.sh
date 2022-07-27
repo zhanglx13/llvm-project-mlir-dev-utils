@@ -41,10 +41,10 @@ processConfig()
     config=${config//-pv/}
     ## Add -rand 1 if not included
     if [[ $isRand == "0" ]];then
-        #config="$config -rand 1"
-        config="$config -rand 0"
-    else
-        config=${config//-rand 1/-rand 0}
+        config="$config -rand 1"
+    #    config="$config -rand 0"
+    #else
+    #    config=${config//-rand 1/-rand 0}
     fi
     ## Add -rand_type float is not included
     if [[ $isRandType == "0" ]];then
@@ -180,25 +180,109 @@ batch_run_all()
 }
 
 ##
-## Given a folder of unit tests, this script executes all tests
-## and collect their outputs to form a report
-##
-TEST_DIR=/home/zhanglx/llvm-project-mlir/mlir/test_debug/debug_test
+## $1: rand_min
+## $2: rand_max
+run_miopen-gen()
+{
+    ${MIOPEN_GEN} $config -rand_min $1 -rand_max $2 | ${MLIR_MIOPEN_DRIVER} -c | ${MLIR_ROCM_RUNNER} | tail -1
+}
 
-cnt=0
-for unittest in ${TEST_DIR}/*
-do
-    ((cnt++))
+##
+## Run a single test with different rand settings
+## $1: XDLOPS
+## $2: VALIDATOR
+single_run()
+{
+    XDLOPS=$1
+    VALIDATOR=$2
+    unittest=${TEST_FILENAME}
+    xd="xdlops"
+    if [[ $XDLOPS != "-x2" ]];then
+        xd="nonxdlops"
+    fi
+
+    ## obtain the name of the test
+    testFileName=${unittest%.mlir}
+    testFileName=${testFileName##*/}
+    ## prepare the config
+    testCMD=$(sed -n "/\/\/ RUN:/p" $unittest)
+    config=${testCMD%%|*}
+    config=${config#*miopen-gen}
+    ## get the tags first
+    #tags=$(getConfigTags "$config")
+    ## process the config after
+    config=$(processConfig "$config")
+
+    #echo "$xd+$VALIDATOR+[-1,1]"
+    run_miopen-gen "-1" "1"
+    #echo "$xd+$VALIDATOR+[-10,10]"
+    run_miopen-gen "-10" "10"
+    #echo "$xd+$VALIDATOR+[1,5]"
+    run_miopen-gen "1" "5"
+    #echo "$xd+$VALIDATOR+[5,10]"
+    run_miopen-gen "5" "10"
+}
+
+printUsage()
+{
+    echo "Later ... "
+    echo "./batch_run.sh [-s]"
+    echo "  -s: single test mode"
+}
+
+OPTIND=1
+run_all_tests=1
+run_single_test=0
+while getopts "hs" opt; do
+    case "$opt" in
+        h)
+            printUsage
+            exit 0
+            ;;
+        s)
+            run_all_tests=0
+            run_single_test=1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            exit 1
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
 done
 
+TEST_DIR=/home/zhanglx/llvm-project-mlir/mlir/test_debug/debug_test
 
-batch_run_all $cnt "rand0" "-1"  "1"
-batch_run_all $cnt "rand1" "-10" "10"
-#batch_run_all $cnt "rand2" "-5"  "5"
-#batch_run_all $cnt "rand3" "2"   "7"
-batch_run_all $cnt "rand4" "1"   "5"
-batch_run_all $cnt "rand5" "5"   "10"
+if [[ ${run_all_tests} -eq 1 ]];then
+    ##
+    ## Given a folder of unit tests, this script executes all tests
+    ## and collect their outputs to form a report
+    ##
+    cnt=0
+    for unittest in ${TEST_DIR}/*
+    do
+        ((cnt++))
+    done
 
+    batch_run_all $cnt "rand0" "-1"  "1"
+    batch_run_all $cnt "rand1" "-10" "10"
+    #batch_run_all $cnt "rand2" "-5"  "5"
+    #batch_run_all $cnt "rand3" "2"   "7"
+    batch_run_all $cnt "rand4" "1"   "5"
+    batch_run_all $cnt "rand5" "5"   "10"
+fi
+
+if [[ ${run_single_test} -eq 1 ]];then
+    TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmK_CHECK_RESNET50_F16_CONFIG1.mlir
+    echo "running single test ${TEST_FILENAME} ... "
+
+    single_run "-x2" "-pv" > bad_test.txt
+    single_run "-x2" "-pv_with_gpu" >> bad_test.txt
+    #single_run "" "-pv"
+fi
 exit 0
 
 ##

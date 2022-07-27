@@ -41,7 +41,10 @@ processConfig()
     config=${config//-pv/}
     ## Add -rand 1 if not included
     if [[ $isRand == "0" ]];then
-        config="$config -rand 1"
+        #config="$config -rand 1"
+        config="$config -rand 0"
+    else
+        config=${config//-rand 1/-rand 0}
     fi
     ## Add -rand_type float is not included
     if [[ $isRandType == "0" ]];then
@@ -170,10 +173,10 @@ batch_run_all()
     SET2="nonxdlops_pv"
     SET3="xdlops_pv-with-gpu"
     SET4="nonxdlops_pv-with-gpu"
-    batch_run $cnt "-x2" "-pv"          "verify_f16_${SET1}_${RAND_RANGE}.txt" "batch_config_f16_${SET1}.txt" ${RAND_MIN} ${RAND_MAX}
-    batch_run $cnt ""    "-pv"          "verify_f16_${SET2}_${RAND_RANGE}.txt" "batch_config_f16_${SET2}.txt" ${RAND_MIN} ${RAND_MAX}
-    batch_run $cnt "-x2" "-pv_with_gpu" "verify_f16_${SET3}_${RAND_RANGE}.txt" "batch_config_f16_${SET3}.txt" ${RAND_MIN} ${RAND_MAX}
-    batch_run $cnt ""    "-pv_with_gpu" "verify_f16_${SET4}_${RAND_RANGE}.txt" "batch_config_f16_${SET4}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt "-x2" "-pv"          "verify_f16_${SET1}_${RAND_RANGE}.txt" "batch_config_f16_rand0_${SET1}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt ""    "-pv"          "verify_f16_${SET2}_${RAND_RANGE}.txt" "batch_config_f16_rand0_${SET2}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt "-x2" "-pv_with_gpu" "verify_f16_${SET3}_${RAND_RANGE}.txt" "batch_config_f16_rand0_${SET3}.txt" ${RAND_MIN} ${RAND_MAX}
+    batch_run $cnt ""    "-pv_with_gpu" "verify_f16_${SET4}_${RAND_RANGE}.txt" "batch_config_f16_rand0_${SET4}.txt" ${RAND_MIN} ${RAND_MAX}
 }
 
 ##
@@ -191,8 +194,8 @@ done
 
 batch_run_all $cnt "rand0" "-1"  "1"
 batch_run_all $cnt "rand1" "-10" "10"
-batch_run_all $cnt "rand2" "-5"  "5"
-batch_run_all $cnt "rand3" "2"   "7"
+#batch_run_all $cnt "rand2" "-5"  "5"
+#batch_run_all $cnt "rand3" "2"   "7"
 batch_run_all $cnt "rand4" "1"   "5"
 batch_run_all $cnt "rand5" "5"   "10"
 

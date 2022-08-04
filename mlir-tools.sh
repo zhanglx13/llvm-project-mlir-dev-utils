@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ## mlir tools
-BUILD_DIR=/home/zhanglx/llvm-project-mlir/build
+BUILD_DIR=~/llvm-project-mlir/build
 BIN_DIR=${BUILD_DIR}/bin
 UP_BIN_DIR=${BUILD_DIR}/external/llvm-project/llvm/bin
 LIB_MLIR_ROCM_RUNTIME=${BUILD_DIR}/external/llvm-project/llvm/lib/libmlir_rocm_runtime.so

@@ -252,9 +252,9 @@ elif [[ $driverPipeline -eq 0 ]]; then
     fi
 fi
 
-exit
+exit 0
 
-## batch testing miopen-gen against configs from resnet50
+## batch testing miopen-gen against configs from resnet50, deprecated
 config="fwd_f16"
 config_file="/home/zhanglx/llvm-project-mlir/build/miopen-gen_configs/miopen-gen_config_$config"
 i=1

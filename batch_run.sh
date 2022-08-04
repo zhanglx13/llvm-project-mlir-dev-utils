@@ -1,7 +1,13 @@
 #! /bin/bash
 
-
-source mlir-tools.sh
+printUsage()
+{
+    echo "Script to run trouble tests with different settings"
+    echo "Usage: ./batch_run.sh -d <TEST_DIR> [-s <BAD_TEST>]"
+    echo "  -s <BAD_TEST>: run the single test in TEST_DIR with different random number settings"
+    echo "                 It is expected miopen-gen is setup to print the histogram of different metrics"
+    echo "  if -s not specified, run all tests in TEST_DIR"
+}
 
 ##
 ## $1: string
@@ -223,17 +229,11 @@ single_run()
     run_miopen-gen "5" "10"
 }
 
-printUsage()
-{
-    echo "Later ... "
-    echo "./batch_run.sh [-s]"
-    echo "  -s: single test mode"
-}
 
 OPTIND=1
 run_all_tests=1
 run_single_test=0
-while getopts "hs" opt; do
+while getopts "hs:d:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -242,6 +242,10 @@ while getopts "hs" opt; do
         s)
             run_all_tests=0
             run_single_test=1
+            BAD_TEST=$OPTARG
+            ;;
+        d)
+            TEST_DIR=$OPTARG
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
@@ -254,7 +258,9 @@ while getopts "hs" opt; do
     esac
 done
 
-TEST_DIR=/home/zhanglx/llvm-project-mlir/mlir/test_debug/debug_test
+source mlir-tools.sh
+
+#TEST_DIR=/home/zhanglx/llvm-project-mlir/mlir/test_debug/debug_test
 
 if [[ ${run_all_tests} -eq 1 ]];then
     ##
@@ -277,9 +283,10 @@ fi
 
 if [[ ${run_single_test} -eq 1 ]];then
     ## This is the failed test on MI100
-    TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmN_CHECK_RESNET50_CONFIG2.mlir
+    #TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmN_CHECK_RESNET50_CONFIG2.mlir
     ## This is the failed test on MI200
     #TEST_FILENAME=${TEST_DIR}/padding_kernel_gemmK_CHECK_RESNET50_F16_CONFIG1.mlir
+    TEST_FILENAME=${TEST_DIR}/${BAD_TEST}
     echo "running single test ${TEST_FILENAME} ... "
 
     single_run "-x2" "-pv" > bad_test.txt

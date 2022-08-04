@@ -289,8 +289,8 @@ if [[ ${run_single_test} -eq 1 ]];then
     TEST_FILENAME=${TEST_DIR}/${BAD_TEST}
     echo "running single test ${TEST_FILENAME} ... "
 
-    single_run "-x2" "-pv" > bad_test.txt
-    single_run "-x2" "-pv_with_gpu" >> bad_test.txt
+    single_run "-x2" "-pv" > bad_test_${BAD_TEST}.txt
+    single_run "-x2" "-pv_with_gpu" >> bad_test_${BAD_TEST}.txt
     single_run "" "-pv"
 fi
 exit 0

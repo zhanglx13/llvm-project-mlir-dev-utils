@@ -2,11 +2,8 @@
 
 ## Sources of fp16 configs ##
 
-All fp16 configs are extracted from `/mlir/test/mlir-miopen-driver` and 
-each config is moved into an individual file named `$filename_CHECK_$prefix.mlir`, 
-where
-`$filename` is the original filename that the config resieds in and
-`$prefix` is the prefix used by `FileCheck` for the config.
+All fp16 configs are extracted from `/mlir/test/mlir-miopen-driver/` 
+that are used for E2E test.
 
 Here is a list of all files that contain at least one f16 config:
 
@@ -25,6 +22,15 @@ Here is a list of all files that contain at least one f16 config:
 
 The number in the parenthesis indicates the number of fp16 configs in the file.
 There are totally 107 fp16 configs (FIXME configs are not counted).
+
+To test all fp16 configs, each of the above files is broken into unit tests,
+which contains only one line of `RUN` and its corresponding `CHECK`s.
+This is done by 
+```sh
+./splitTest.sh <input file> <dest dir> <data type>
+```
+which extracts single tests with `-t <data type>` from `<input test>`
+and put the result unit tests into `<dest dir>`.
 
 ## Settings of fp16 tests ##
 
@@ -73,19 +79,34 @@ on both MI200 and MI100 in [this section](#the-worst-test-on-mi200).
 The root mean square difference between two data sets $A$ and $B$ is defined as
 $$\frac{\sqrt{\sum\limits_{i=1}^N (a_i - b_i)^2}}{\sqrt{N}\cdot\max (\max(|a_i|), \max(|b_i|))}$$
 
+## Running Tests ##
 
-# Experiment Results #
+To run all test with different settings
 
-
-The random numbers used to initialize the inputs are uniformly sampled between
-the range `[rand_min, rand_max]`, which are provided as options when invoking `miopen-gen`.
-Four ranges are chosen:
+```sh
+./batch_run.sh -d <dest dir>
+```
+which runs all the configs in `<dest dir>` with different combinations of `-pv`|`-pv_with_gpu` $\pm$ `-x2`
+and four random number ranges
 
 - `r0`: [-1, 1]
 - `r1`: [-10, 10]
 - `r4`: [1, 5]
 - `r5`: [5, 10]
 
+The results are written into `verify_f16_${SET}_${RAND_RANGE}.txt`.
+For example, file `verify_f16_xdlops_pv_rand0.txt` contains the results for 
+xdlops gpu kernel with cpu validation using [-1, 1] as the random number range.
+
+To run a single test
+```sh
+./batch_run.sh -d <dest dir> -s <bad test>
+```
+which runs the same combinations as in batch mode but only for the single test
+`<dest dir>/<bad test>`.
+The results are written to `bad_test_${BAD_TEST}.txt`.
+
+# Experiment Results #
 
 ## Effects of Input Number Magnitude ##
 

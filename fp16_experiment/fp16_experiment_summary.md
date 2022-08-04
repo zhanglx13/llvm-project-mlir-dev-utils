@@ -428,9 +428,14 @@ The current CI setup for E2E tests is as follows:
    - The verification function compares the metrics with their corresponding 
      thresholds and outputs 0 or 1 for each metric indicating whether the metric
      is below its threshold.
+     For example, output of [1, 1, 0] indicates that the RMS and maxAbsDiff value
+     are below their threshold, but maxRelDiff is above the threshold.
    - The verification function can also output more detailed information about
-     the difference, such as the histogram of element wise metric, elements values
-     corresponding to the max error. 
+     the difference, such as the histograms of element wise metrics, elements values
+     corresponding to the max error.
+     In this way, invoking `miopen-gen -pv|pv_with_gpu` can provide more detailed
+     information for debugging purposes.
+     And such information is ignored by lit when running all tests.
 2. Move the decision of how to do verification out of `miopen-gen` so that
    test writers can determine how to verify the results, 
    such as random number patterns and ranges, verification metrics, and thresholds.
@@ -439,6 +444,34 @@ The current CI setup for E2E tests is as follows:
    - Make random number range and metric thresholds command line options for `miopen-gen`.
    - Each test (CHECK command) can determine which metric(s) to check and the 
      corresponding threshold(s) for the metric(s).
+     For example, if a developer wants to test a config with fp16 data type 
+     and use the RMS metric with a threshold of 1e-5 and ignore the 
+     element wise metrics, the test can be written as
+     ```
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f16 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // CHECK: [1 {{.*}} {{.*}}]
+     ```
+     For f32 tests, the developer also wants to make sure the maxRelDiff metric is below 
+     1e-3, the test can be written as
+     ```
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // CHECK: [1 {{.*}} 1]
+     ```
+     Another way to ignore the metric is to set its threshold to a very high value.
+     And this can be done by cmake during the building. For example
+     ```
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 -maxAbsDiff %abs_threshold -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // CHECK: [1 1 1]
+     ```
+     And the threshold for maxAbsDiff can be set in `mlir/test/CMakeLists.txt` as
+     ```cmake
+     if (MLIR_MIOPEN_DRIVER_IGNORE_MAXABSDIFF)
+       set (MAXABSDIFF_THRESOLD 1000)
+     ```
+    and set the variable in `/mlir/test/lit.site.cfg.py.in` as 
+    ```cmake
+    config.abs_threshold = @MAXABSDIFF_THRESOLD@
+    ```
 3. Reorganize the current E2E tests
 
 

@@ -396,12 +396,12 @@ config $\rightarrow$ `miopen-gen` $\rightarrow$ `mlir-miopen-driver` $\rightarro
   
 The current CI setup for E2E tests is as follows:
 
-- In PR CI, tests in `e2e_for_pr` are enabled as fixed tests (`-rand fixed`)
+- In PR CI, tests in `e2e_for_pr/` are enabled as fixed tests (`-rand fixed`)
   with GPU validation (`-pv_with_gpu`)
 - In nightly CI, both fixed and random E2E tests are enabled
-  - tests in `auto_e2e` are enabled as random tests
+  - tests in `auto_e2e/` are enabled as random tests
     (`-rand 1`) with CPU validation (`-pv`)
-  - tests in `auto_e2e` and `misc_e2e` are enabled as fixed tests
+  - tests in `auto_e2e/` and `misc_e2e/` are enabled as fixed tests
     (`-rand fixed`) with GPU validation (`-pv_with_gpu`)
 
 
@@ -448,19 +448,25 @@ The current CI setup for E2E tests is as follows:
      and use the RMS metric with a threshold of 1e-5 and ignore the 
      element wise metrics, the test can be written as
      ```
-     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f16 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 
+        -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f16 | mlir-miopen-driver -c | 
+        mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
      // CHECK: [1 {{.*}} {{.*}}]
      ```
      For f32 tests, the developer also wants to make sure the maxRelDiff metric is below 
      1e-3, the test can be written as
      ```
-     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 
+        -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | 
+        mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
      // CHECK: [1 {{.*}} 1]
      ```
      Another way to ignore the metric is to set its threshold to a very high value.
      And this can be done by cmake during the building. For example
      ```
-     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 -maxAbsDiff %abs_threshold -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
+     // RUN: miopen-gen %pv %random_data %xdlops --rand_type float -RMS 1e-5 -maxRelDiff 1e-3 -maxAbsDiff %abs_threshold 
+        -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -p -t f32 | mlir-miopen-driver -c | 
+        mlir-rocm-runner --shared-libs=%linalg_test_lib_dir/libmlir_rocm_runtime%shlibext,%conv_validation_wrapper_library_dir/libconv-validation-wrappers%shlibext,%linalg_test_lib_dir/libmlir_runner_utils%shlibext --entry-point-result=void | FileCheck %s
      // CHECK: [1 1 1]
      ```
      And the threshold for maxAbsDiff can be set in `mlir/test/CMakeLists.txt` as
@@ -473,5 +479,16 @@ The current CI setup for E2E tests is as follows:
      config.abs_threshold = @MAXABSDIFF_THRESOLD@
      ```
 3. Reorganize the current E2E tests
-
-
+   - Put all E2E tests in the same directory `/mlir/test/mlir-miopen-driver/e2e/`.
+     We can further group E2E tests based on the directions, data types, 
+     or even which model they come from.
+   - Since E2E tests are slow to run and we want the PR CI to be as fast as possible,
+     we could remove E2E tests from PR CI and check all E2E tests in the nightly CI.
+   - We can still keep the fixed E2E test stage (or should we remove it?) and
+     use a tighter thresholds for all metrics, since `-rand fixed` + `-pv_with_gpu`
+     is expected to work for all data types.
+   - For random E2E test stage, we can setup for different data types:
+     - For integers and f32, use a random range around 0 and turn on both RMS and
+       element wise metrics.
+     - For fp16, use a random range away from 0 (bounce between [-3,-1] and [1,3])
+       and turn on both RMS and element wise metrics.

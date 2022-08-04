@@ -468,10 +468,10 @@ The current CI setup for E2E tests is as follows:
      if (MLIR_MIOPEN_DRIVER_IGNORE_MAXABSDIFF)
        set (MAXABSDIFF_THRESOLD 1000)
      ```
-    and set the variable in `/mlir/test/lit.site.cfg.py.in` as 
-    ```cmake
-    config.abs_threshold = @MAXABSDIFF_THRESOLD@
-    ```
+     and the variable is set in `/mlir/test/lit.site.cfg.py.in` as 
+     ```cmake
+     config.abs_threshold = @MAXABSDIFF_THRESOLD@
+     ```
 3. Reorganize the current E2E tests
 
 

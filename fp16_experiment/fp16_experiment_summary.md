@@ -503,3 +503,27 @@ The current CI setup for E2E tests is as follows:
        element wise metrics.
      - For fp16, use a random range away from 0 (bounce between [-3,-1] and [1,3])
        and turn on both RMS and element wise metrics.
+
+# Discussion List #
+
+- [ ] The purpose of `batch_run.sh` and where to put it in the rocMLIR repo.
+- [ ] For PR CI
+      - which E2E tests
+      - which validation function (verifier)
+      - fixed or random or both
+      - random range
+      - which metrics to use
+      - threshold of chosen metric
+- [ ] For nightly CI
+      - which E2E tests
+      - which validation function (verifier)
+      - fixed or random or both
+      - random range
+      - which metrics to use
+      - threshold of chosen metric
+- [ ] The directory structure of all E2E tests
+- [ ] A better way to generate the random inputs to avoid underflow
+
+
+The experiment results and scripts are kept in [this repo](https://github.com/zhanglx13/llvm-project-mlir-dev-utils/tree/main/fp16_experiment).
+The doc on [github gist](https://gist.github.com/zhanglx13/e91b119890ff7700ec1bd3e115a81387) is for discussion purpose, which is synced with the doc on [the repo](https://github.com/zhanglx13/llvm-project-mlir-dev-utils/blob/main/fp16_experiment/fp16_experiment_summary.md).

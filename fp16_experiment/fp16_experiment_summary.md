@@ -508,19 +508,19 @@ The current CI setup for E2E tests is as follows:
 
 - [ ] The purpose of `batch_run.sh` and where to put it in the rocMLIR repo.
 - [ ] For PR CI
-      - which E2E tests
-      - which validation function (verifier)
-      - fixed or random or both
-      - random range
-      - which metrics to use
-      - threshold of chosen metric
+  - which E2E tests
+  - which validation function (verifier)
+  - fixed or random or both
+  - random range
+  - which metrics to use
+  - threshold of chosen metric
 - [ ] For nightly CI
-      - which E2E tests
-      - which validation function (verifier)
-      - fixed or random or both
-      - random range
-      - which metrics to use
-      - threshold of chosen metric
+  - which E2E tests
+  - which validation function (verifier)
+  - fixed or random or both
+  - random range
+  - which metrics to use
+  - threshold of chosen metric
 - [ ] The directory structure of all E2E tests
 - [ ] A better way to generate the random inputs to avoid underflow
 

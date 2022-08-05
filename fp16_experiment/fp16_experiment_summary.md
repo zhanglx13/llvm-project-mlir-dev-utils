@@ -135,7 +135,7 @@ the error with r1 is larger than that with r0.
 Observation: The larger the magnitude, the larger the error. 
 (This is true because r0 and r1 are around 0)
 
-## Effects of Subnormal Numbers in Inputs ##
+## Effects of Underflow and Overflow ##
 
 The following table shows the aggregated values for r0 ([-1, 1]), r4 ([1, 5]), 
 and r5 ([5, 10]) on MI200.
@@ -144,10 +144,20 @@ The maxAbsDiff metric is expected to be larger with r4 and r5 since larger input
 numbers are used.
 The RMS metric is relatively stable with different ranges.
 
+To show the effects of overflow, a test is considered to be pass if its maxEpsilonDiff $\le$ 1
+and the pass rate among all test for each random range is aggregated in the row `pass rate`.
+When r0 is used, most tests have large maxEpsilonDiff values.
+When r4 is used, the max maxEpsilonDiff value among all tests is 1.
+Therefore, all tests pass, i.e. the pass rate is 100%.
+However, the pass rate with r5 is not 100% though the max maxEpsilonDiff value 
+among all tests is 1.
+This is because 3 tests have overflows (value > 65504) with r5.
+
 |                    | r0       | r4       | r5       |
 |:-------------------|----------|----------|----------|
 | maxEpsilonDiff ave | 314.24   | 0.73     | 0.72     |
 | maxEpsilonDiff max | 2,030.33 | 1        | 1        |
+| pass rate          | 27.73%   | 100%     | 97.82%   |
 | maxAbsDiff ave     | 0.15     | 2.67     | 4.99     |
 | maxAbsDiff max     | 5.67     | 32       | 32       |
 | maxRelDiff ave     | 4.42     | 5.64E-04 | 4.69E-04 |
@@ -161,6 +171,7 @@ Observation:
 
 1. When subnormal numbers are not involved, much smaller errors are expected.
 2. The RMS metric is insensitive of subnormal numbers.
+3. Larger inputs can lead to overflow in some tests.
 
 
 ## Effects of validation methods ##

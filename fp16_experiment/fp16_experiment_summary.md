@@ -489,40 +489,87 @@ The current CI setup for E2E tests is as follows:
      ```cmake
      config.abs_threshold = @MAXABSDIFF_THRESOLD@
      ```
-3. Reorganize the current E2E tests
-   - Put all E2E tests in the same directory `/mlir/test/mlir-miopen-driver/e2e/`.
-     We can further group E2E tests based on the directions, data types, 
-     or even which model they come from.
-   - Since E2E tests are slow to run and we want the PR CI to be as fast as possible,
-     we could remove E2E tests from PR CI and check all E2E tests in the nightly CI.
-   - We can still keep the fixed E2E test stage (or should we remove it?) and
-     use a tighter thresholds for all metrics, since `-rand fixed` + `-pv_with_gpu`
-     is expected to work for all data types.
-   - For random E2E test stage, we can setup for different data types:
-     - For integers and f32, use a random range around 0 and turn on both RMS and
-       element wise metrics.
+3. Reorganize the E2E tests
+   - Naming convention. 
+     Each test file is associated with one particular config.
+     It contains tests of the config with all directions, datatypes, and layouts.
+     Information about where the config comes from, such as Resnet50, can go in
+     the comments at the beginning of the file (config specific info) or the test
+     (test specific info).
+     Therefore, we can name each file `config_n` without the `.mlir` extension,
+     where `N` is the index of the config. 
+     - I don't see why test filename has `.mlir`. Please let me know if there is
+       a good reason. @jerryyin @krzysz00 @yiqian1
+     - With an index for each config, it should be easier for developers to
+       communicate about bugs when dealing with a particular config. 
+   - Directory structure.
+     ```
+     e2e/
+        nightly_e2e/
+           config_0
+           config_1
+           config_2
+           ...
+        pr_e2e/
+           config_7
+           config_13
+           config_15
+           ...
+        misc_e2e/
+        ...
+     ```
+     The `nightly_e2e/` directory contains all configs that are checked during
+     the nightly CI.
+     The `pr_e2e` directory only contains a subset of all configs that are checked
+     during the PR CI.
+     The `misc_e2e` directory can be used to hold tests that are either not fully 
+     tested yet or meant to test a particular feature of the CPU validation.
+     They can be moved to the `nightly_e2e/` directory when they are ready.
+   - Testing configurations.
+     All tests are configured with `-rand 1`, i.e. we are getting rid of the fixed
+     test stage.
+     - For integers and f32, use a random range around 0 ([-1, 1])
+       and turn on both RMS and element wise metric.
      - For fp16, use a random range away from 0 (bounce between [-3,-1] and [1,3])
        and turn on both RMS and element wise metrics.
+     - For PR CI, use `-pv_with_gpu` as the validation method
+     - For nightly CI, use `-pv` as the validation method.
+       In the future, we can add more validation methods, such as tosa and mlir based.
+   - Auto generation of all E2E tests.
+     All `config_n` files are generated with `generateE2ETest.py`.
+     We can have one `.toml` file that contains all configs to generate tests for 
+     the nightly CI.
+     For PR CI, we can have another script to auto select a number of `config_n`'s
+     and put them in `pr_e2e/`.
+     The following environment variables are required in the `.toml` file as part
+     of the `suffix`.
+     - `%pv`: validation methods
+     - `%rand_min`: the lower bound of the random number range
+     - `%rand_max`: the upper bound of the random number range
+     - `%RMS_threshold`: the threshold for the RMS metric
+     - `%absDiff_threshold`: the threshold for the `maxAbsDiff` metric
+     - `%relDiff_threshold`: the threshold for the `maxRelDiff` metric
 
 # Discussion List #
 
 - [ ] The purpose of `batch_run.sh` and where to put it in the rocMLIR repo.
-- [ ] For PR CI
+- [x] For PR CI
   - which E2E tests
   - which validation function (verifier)
   - fixed or random or both
   - random range
   - which metrics to use
   - threshold of chosen metric
-- [ ] For nightly CI
+- [x] For nightly CI
   - which E2E tests
   - which validation function (verifier)
   - fixed or random or both
   - random range
   - which metrics to use
   - threshold of chosen metric
-- [ ] The directory structure of all E2E tests
+- [x] The directory structure of all E2E tests
 - [ ] A better way to generate the random inputs to avoid underflow
+- [ ] Sources of the configs?
 
 
 The experiment results and scripts are kept in [this repo](https://github.com/zhanglx13/llvm-project-mlir-dev-utils/tree/main/fp16_experiment).

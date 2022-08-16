@@ -4,13 +4,53 @@
 \graphicspath{{./figs/}}
 \DeclareGraphicsExtensions{.pdf,.jpeg,.png, .jpg, .PNG}
 
-\title{Towards a better E2E testing framework}
+\title{Towards a Better Verification function}
 \author{Lixun Zhang}
 \date{\today}
 
 
 \begin{document}
 \frame{\maketitle}
+
+\section{Motivation}
+
+\begin{frame}
+  \frametitle{Motivations}
+  \textbf{Verification}: compare outputs from GPU kernel (kern) and validation function (val)
+  \vskip+1em
+  Current verification method used by MLIR
+  \begin{equation}
+    \text{maxRelDiff}_\text{old} = \max\limits_i(\frac{|\text{val}_i - \text{kern}_i|}{|\text{val}_i|}), \; |\text{val}_i|>1\times10^{-3}\nonumber
+  \end{equation}
+  \vskip-1em
+  \begin{itemize}
+  \item Element wise metric
+  \item Relative error between two values
+  \item ignore the error if the denominator is too small ($< 1\times10^{-3}$)
+  \item Pass if the maximum relative difference among all elements is smaller than a tolerance $\delta$
+  \end{itemize}
+
+  Problem: $\delta = 15\%$ for fp16 tests with random inputs ([-1, 1]) to pass
+  \begin{itemize}
+  \item MLIR\#408, PR\#694, PR\#696
+  \item $\delta$ is too large to capture bugs
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Motivations}
+
+  Current verification method used by MIOpen: RMS
+  \begin{equation}
+    \frac{\sqrt{\sum\limits_{i=1}^N(a_i-b_i)^2}}{\sqrt{N}\cdot\max(\max(|a_i|), \max(|b_i|))}\nonumber
+  \end{equation}
+  \vskip-1em
+  \begin{itemize}
+  \item global metric
+  \item Pass if RMS is smaller than a tolerance $\delta$
+  \item Adjust $\delta$ for different algorithms and directions
+  \end{itemize}
+\end{frame}
 
 \begin{frame}
   \frametitle{The Problem and History}

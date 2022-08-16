@@ -2,3 +2,10 @@
 *.txt
 *tmp*
 *temp*
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+auto

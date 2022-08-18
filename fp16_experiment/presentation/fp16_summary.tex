@@ -17,7 +17,7 @@
 \usetikzlibrary{tikzmark}
 \usetikzlibrary{decorations.pathreplacing}
 
-\title{Towards a Better Verification function}
+\title{Towards a Better Verification Function}
 \author{Lixun Zhang}
 \date{\today}
 
@@ -35,24 +35,26 @@
   \frametitle{Verification Method in MLIR}
   \textbf{Verification}: compare outputs from GPU kernel (kern) and validation function (val)
   \vskip+1em
-  Current verification method used by MLIR
-  \begin{equation}
-    \text{maxRelDiff}_\text{old} = \max\limits_i(\frac{|\text{val}_i - \text{kern}_i|}{|\text{val}_i|}), \; |\text{val}_i|>1\times10^{-3}\nonumber
-  \end{equation}
-  \vskip-1em
-  \begin{itemize}
-  \item Element wise metric
-  \item Relative error between two values
-  \item Ignore the error if the denominator is too small ($< 1\times10^{-3}$)
-  \item Pass if the maximum relative difference among all elements is smaller than a tolerance $\delta_{rel}$
-  \end{itemize}
+  \uncover<2->
+  {Current verification method used by MLIR
+    \begin{equation}
+      \text{maxRelDiff}_\text{old} = \max\limits_i(\frac{|\text{val}_i - \text{kern}_i|}{|\text{val}_i|}), \; |\text{val}_i|>1\times10^{-3}\nonumber
+    \end{equation}
+    \vskip-1em
+    \begin{itemize}
+    \item Element wise metric
+    \item Relative error between two values
+    \item Ignore the error if the denominator is too small ($< 1\times10^{-3}$)
+    \item Pass if the maximum relative difference among all elements is smaller than a tolerance $\delta_{rel}$
+    \end{itemize}}
 
-  Problem: $\delta_{rel} = 15\%$ for fp16 tests with random inputs ([-1, 1])
-  \begin{itemize}
-  \item MLIR\#408, PR\#694, PR\#696
-  \item \alert{$\delta_{rel}$ is too large to distinguish bugs from numerical errors}
+  \uncover<3->
+  {Problem: $\delta_{rel} = 15\%$ for fp16 tests with random inputs ([-1, 1])
+    \begin{itemize}
+    \item MLIR\#408, PR\#694, PR\#696
+    \item \alert{$\delta_{rel}$ is too large to distinguish bugs from numerical errors}
     \item For other data types, $\delta_{rel}=1\times10^{-6}$ 
-  \end{itemize}
+    \end{itemize}}
 \end{frame}
 
 \begin{frame}
@@ -111,12 +113,13 @@
   \end{columns}
 
   \vskip+1em
-  We need a better verification function that can \alert{detect bugs and ignore numerical errors}
+  \uncover<2->
+  {We need a better verification function that can \alert{detect bugs and ignore numerical errors}
     \begin{itemize}
     \item which metric to use? Element wise or RMS?
     \item how to choose $\delta$?
     \item how to deal with special tests?
-    \end{itemize}
+    \end{itemize}}
 \end{frame}
 
 
@@ -160,29 +163,30 @@
 
     \column{0.4\linewidth}
 
-    Hardware
-    \begin{itemize}
-    \item MI100 gfx908 ixt-rack-112
-    \item MI200 gfx90a lockhart5
-    \end{itemize}
+    \uncover<3->
+    {Hardware
+      \begin{itemize}
+      \item MI100 gfx908 ixt-rack-112
+      \item MI200 gfx90a lockhart5
+      \end{itemize}}
   \end{columns}
   
   \vskip+.5em
-  Settings of the test
-  \begin{itemize}
-  \item \texttt{-rand} 1: Generate random numbers as inputs
-  \item \texttt{-rand\_min} and \texttt{-rand\_max}: choose the range of the random numbers
+  \uncover<2->
+  {Settings of the test
     \begin{itemize}
+    \item \texttt{-rand} 1: Generate random numbers as inputs
+    \item \texttt{-rand\_min} and \texttt{-rand\_max}: choose the range of the random numbers
+      \begin{itemize}
       \item r0 [-1, 1],  r1 [-10, 10], r4 [1, 5], r5 [5, 10]
-    \end{itemize}
-  \item \texttt{-pv} and \texttt{-pv\_with\_gpu}: choose the validation method
-  \item \texttt{-x2}: enable xdlops
-  \end{itemize}
+      \end{itemize}
+    \item \texttt{-pv} and \texttt{-pv\_with\_gpu}: choose the validation method
+    \item \texttt{-x2}: enable xdlops
+    \end{itemize}}
 
-  Methodology: \alert{Effects of different settings to the error w.r.t all metrics}
+  \uncover<4->
+  {Methodology: \alert{Effects of different settings to the error w.r.t all metrics}}
 \end{frame}
-
-
 
 
 \subsection{Results and Observations}
@@ -204,22 +208,29 @@
       numbers ($< 2^{-14}$) to zero on MI200\\
       r0 [-1, 1]\\r1 [-10, 10]\\r4 [1, 5]};
     %% Exceptions
-    \draw [red, thick] ($(tab TL)+(2.5, -.4)$) rectangle ++(1.1, -3.6);
-    \draw [red, thick] ($(tab TL)+(6.1, -.4)$) rectangle ++(1.1, -3.6);
-    \draw [blue, thick] ($(tab TL)+(4.9, -.4)$) rectangle ++(1.1, -3.6);
-    \draw [blue, thick] ($(tab TL)+(8.5, -.4)$) rectangle ++(1.1, -3.6);
+    \uncover<2>
+    { \draw [brown, thick] ($(tab TL)+(0.03, -3.4)$) rectangle ++(9.6, -.66);
+      \draw [brown, thick] ($(tab TL)+(0.03, -2.05)$) rectangle ++(4.8, -.66);}
+    \uncover<3>
+    { \draw [red, thick] ($(tab TL)+(2.5, -.4)$) rectangle ++(1.1, -3.6);
+      \draw [red, thick] ($(tab TL)+(6.1, -.4)$) rectangle ++(1.1, -3.6);}
+    \uncover<4>
+    { \draw [blue, thick] ($(tab TL)+(4.9, -.4)$) rectangle ++(1.1, -3.6);
+      \draw [blue, thick] ($(tab TL)+(8.5, -.4)$) rectangle ++(1.1, -3.6);}
     
-    \draw [brown, thick] ($(tab TL)+(0.03, -3.4)$) rectangle ++(9.6, -.66);
-    \draw [brown, thick] ($(tab TL)+(0.03, -2.05)$) rectangle ++(4.8, -.66);
+    
     % \draw [blue, thick] ($(tab TL)+(5.1, -2.1)$) rectangle ++(2.45, -.6);
   \end{tikzpicture}
 
   \begin{itemize}
   \item flush-denorms-to-zero behavior leads to
     \begin{itemize}
-    \item $E_{r1} > E_{r0}$ on both MI200 and MI100 (except for maxRelDiff and RMS)
-    \item $E_{MI200}>E_{MI100}$ with r0
-    \item  $E_{MI200} \approx E_{MI100}$ with r4
+      \uncover<2->
+      {\item $E_{r1} > E_{r0}$ on both MI200 and MI100 (except for maxRelDiff and RMS)}
+      \uncover<3->
+      {\item $E_{MI200}>E_{MI100}$ with r0}
+      \uncover<4->
+      {\item  $E_{MI200} \approx E_{MI100}$ with r4}
     \end{itemize}
   \end{itemize}
  
@@ -241,12 +252,18 @@
 
       %% table name
       \node [below right, align=left] at ($(tab TL)+(0, -4.5)$)
-      { r0 [-1, 1] vs. r4 [1, 5]/r5 [5, 10]\\
-        A test passes if $\text{maxEpsilonDiff} \le 1$};
+      { r0 [-1, 1] vs. r4 [1, 5]/r5 [5, 10]};
+      \uncover<2->
+      { \node [below right, align=left] at ($(tab TL)+(0, -5)$)
+        { A test passes if $\text{maxEpsilonDiff} \le 1$};}
       %% Exceptions
-      \draw [red, thick] ($(tab TL)+(0.03, -1.75)$) rectangle ++(6.3, -.6);
-      \draw [red, thick] ($(tab TL)+(0.03, -3.77)$) rectangle ++(6.3, -.66);
-      \draw [blue, thick] ($(tab TL)+(0.03, -1.4)$) rectangle ++(6.3, -.3);
+      \uncover<1>
+      { \draw [brown, thick] ($(tab TL)+(0.03, -1.75)$) rectangle ++(6.3, -.6);
+        \draw [brown, thick] ($(tab TL)+(0.03, -3.77)$) rectangle ++(6.3, -.66);}
+      \uncover<2>
+      { \draw [blue, thick] ($(tab TL)+(0.03, -1.4)$) rectangle ++(6.3, -.3);}
+      \uncover<3->
+      { \draw [red, thick] ($(tab TL)+(3.8, -1.1)$) rectangle ++(2.5, -.6);}
     \end{tikzpicture}
     \column{0.55\linewidth}
 
@@ -255,9 +272,10 @@
       $\Leftarrow$ Underflow
     \item Except for maxAbsDiff and RMS\\
       $\Leftarrow$ larger inputs with r4/r5
-    \item All tests with r4 pass since the maximum $\text{maxEpsilonDiff}$ is 1
-    \item However, some tests with r5 fail even the maximum $\text{maxEpsilonDiff}$ is 1\\
-      $\Leftarrow$ Overflow ($>$ 65504)
+      \uncover<3->
+      { \item All tests with r4 pass since the maximum $\text{maxEpsilonDiff}$ is 1
+      \item However, some tests with r5 fail even the maximum $\text{maxEpsilonDiff}$ is 1\\
+        $\Leftarrow$ Overflow ($>$ 65504)}
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -276,17 +294,16 @@
     %% table name
     \node [below right, align=left] at ($(tab TL)+(0, -4.5)$)
     { r0 [-1, 1] vs. r4 [1, 5]};
-    %% Exceptions
-    %\draw [red, thick] ($(tab TL)+(0.03, -1.78)$) rectangle ++(6.3, -.6);
-    %\draw [red, thick] ($(tab TL)+(0.03, -3.77)$) rectangle ++(6.3, -.66);
-    %\draw [blue, thick] ($(tab TL)+(0.03, -1.4)$) rectangle ++(6.3, -.3);
   \end{tikzpicture}
 
   \vskip-.5em
   \begin{itemize}
-  \item cpu: sequential implementation of the convolution operation
-  \item non-xdlops: convert convolution to gemm and compute gemm without \texttt{mfma}
-  \item xdlops: convert convolution to gemm and compute gemm with \texttt{mfma}
+    \uncover<2->
+    {\item cpu: sequential implementation of the convolution operation}
+    \uncover<3->
+    {\item non-xdlops: convert convolution to gemm and compute gemm without \texttt{mfma}}
+    \uncover<4->
+    {\item xdlops: convert convolution to gemm and compute gemm with \texttt{mfma}}
   \end{itemize}
 
   \begin{tikzpicture}[overlay, remember picture]
@@ -297,12 +314,16 @@
     \coordinate (XDLOPS) at ($(orig)+(4.5, -5)$);
     \coordinate (NONXDLOPS) at ($(orig)+(1, -1)$);
 
-    \node [circle, draw=black, fill=blue!50!white] (CPU node) at (CPU) {CPU}; 
-    \node [circle, draw=black, fill=red!50!white] (XDLOPS node) at (XDLOPS) {xdlops};
-    \node [circle, draw=black, fill=brown!50!white, align=center] (NONXDLOPS node) at (NONXDLOPS) {non-\\xdlops};
-    \draw (CPU node) -- (XDLOPS node) node [pos=.5, sloped, above] {medium};
-    \draw (NONXDLOPS node) -- (CPU node) node [pos=.5, sloped, above] {small};
-    \draw (NONXDLOPS node) -- (XDLOPS node) node [pos=.5, sloped, above] {large};;
+    \uncover<2->
+    { \node [circle, draw=black, fill=blue!50!white] (CPU node) at (CPU) {CPU};}
+    \uncover<3->
+    { \node [circle, draw=black, fill=brown!50!white, align=center] (NONXDLOPS node) at (NONXDLOPS) {non-\\xdlops};}
+    \uncover<4->
+    { \node [circle, draw=black, fill=red!50!white] (XDLOPS node) at (XDLOPS) {xdlops};}
+    \uncover<5->
+    { \draw (CPU node) -- (XDLOPS node) node [pos=.5, sloped, above] {medium};
+      \draw (NONXDLOPS node) -- (CPU node) node [pos=.5, sloped, above] {small};
+      \draw (NONXDLOPS node) -- (XDLOPS node) node [pos=.5, sloped, above] {large};}
   \end{tikzpicture}
   
 \end{frame}
@@ -326,13 +347,18 @@
       \node [above right, align=left, scale=.7] at ($(tab TL)+(0,0)$)
       { MI200 xdlops/cpu\\
         \texttt{auto\_e2e/padding\_kernel\_gemmK.mlir [CHECK\_RESNET50\_F16\_CONFIG1]}};
-      \node [below right, align=left, scale=.9] at ($(tab TL)+(0,-5.1)$)
-      { \texttt{acc 4}: truncate the sum of every 4 multiplications from fp64 to fp32\\
-        \texttt{flush}: flush small numbers ($<2^{-14}$) to zero};
+      %% blocker
+      \uncover<1>
+      { \draw [fill=white, draw=white] ($(tab TL)+(3.33, 0)$) rectangle ++(3.8, -5.2);}
+      \uncover<2>
+      { \draw [fill=white, draw=white] ($(tab TL)+(5.22, 0)$) rectangle ++(1.9, -5.2);}
       %% Exceptions
-      \draw [blue, thick] ($(tab TL)+(0.03, -1.9)$) rectangle ++(7, -.3);
-      \draw [red, thick] ($(tab TL)+(0.03, -2.3)$) rectangle ++(7, -.6);
-      \draw [brown, thick] ($(tab TL)+(0.03, -4.05)$) rectangle ++(7, -.3);
+      \uncover<2>
+      { \draw [blue, thick] ($(tab TL)+(0.03, -1.9)$) rectangle ++(5.22, -.3);}
+      \uncover<3->
+      { \draw [blue, thick] ($(tab TL)+(0.03, -1.9)$) rectangle ++(7, -.3);
+        \draw [red, thick] ($(tab TL)+(0.03, -2.3)$) rectangle ++(7, -.6);
+        \draw [brown, thick] ($(tab TL)+(0.03, -4.05)$) rectangle ++(7, -.3);}
       
     \end{tikzpicture}
     
@@ -340,10 +366,12 @@
 
     Push CPU to emulate the behavior of the xdlops pipeline
     \begin{itemize}
-    \item \texttt{acc 4}: the \texttt{mfma} instructions are performed by the \texttt{DOT4\_F32\_F16} unit, which performs a fused multiply and add of 4 pairs of fp16 numbers\\
-      $\Rightarrow$ slightly improves the results
-    \item \texttt{flush}: \texttt{mfma} instructions on MI200\\
-      $\Rightarrow$ greatly improves the results
+      \uncover<2->
+      {\item \texttt{acc 4}: the \texttt{mfma} instructions are performed by the \texttt{DOT4\_F32\_F16} unit, which performs a fused multiply and add of 4 pairs of fp16 numbers\\
+        $\Rightarrow$ truncate the sum of every 4 multiplications from fp64 to fp32\\
+        $\Rightarrow$ slightly improves the results}
+      \uncover<3->
+      {\item \texttt{flush}: flush small numbers ($<2^{-14}$) to zero $\Rightarrow$ greatly improves the results}
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -359,13 +387,14 @@
   \item Truncation behavior difference during accumulation of intermediate results
   \end{enumerate}
 
-  Element wise vs. RMS
-  \begin{itemize}
-  \item Element wise metrics are more sensitive to numerical errors\\
-    $\Rightarrow$ not suitable for small inputs
-  \item RMS is more sensitive to the magnitude of the elements\\
-    $\Rightarrow$ not suitable for large inputs
-  \end{itemize}
+  \uncover<2->
+  { Element wise vs. RMS
+    \begin{itemize}
+    \item Element wise metrics are more sensitive to numerical errors\\
+      $\Rightarrow$ not suitable for small inputs
+    \item RMS is more sensitive to the magnitude of the elements\\
+      $\Rightarrow$ not suitable for large inputs
+    \end{itemize}}
 \end{frame}
 
 \section{Proposals}

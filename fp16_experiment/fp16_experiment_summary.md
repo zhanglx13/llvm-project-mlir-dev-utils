@@ -193,18 +193,18 @@ The fundamental hardware is the DOT4\_F32_F16 unit inside the miSIMD Matrix Core
 which performs a fused multiply and add of 4 pairs of elements
 and accumulates the result with FP90.
 
-|                    | xdlops+cpu | xdlops+gpu | nonxdlops+cpu |
-|:-------------------|------------|------------|---------------|
-| maxEpsilonDiff ave | 352.98     | 818.53     | 285.98        |
-| maxEpsilonDiff max | 3,959.25   | 9,306.00   | 5,746.25      |
-| maxAbsDiff ave     | 3.13       | 3.76       | 1.21          |
-| maxAbsDiff max     | 24.13      | 28.00      | 20.13         |
-| maxRelDiff ave     | 2.01       | 2.82       | 0.57          |
-| maxRelDiff max     | 68.5       | 81.50      | 12.75         |
-| maxRelDiff old ave | 2.45E-02   | 4.96E-02   | 1.72E-02      |
-| maxRelDiff old max | 3.20E-01   | 8.43E-01   | 5.60E-01      |
-| RMS ave            | 2.75E-06   | 4.57E-06   | 1.67E-06      |
-| RMS max            | 1.26E-05   | 2.03E-05   | 1.16E-05      |
+| kernel/validation  | nonxdlops/cpu | xdlops/cpu | xdlops/nonxdlops |
+|:-------------------|---------------|------------|------------------|
+| maxEpsilonDiff ave | 285.98        | 352.98     | 818.53           |
+| maxEpsilonDiff max | 5,746.25      | 3,959.25   | 9,306.00         |
+| maxAbsDiff ave     | 1.21          | 3.13       | 3.76             |
+| maxAbsDiff max     | 20.13         | 24.13      | 28.00            |
+| maxRelDiff ave     | 0.57          | 2.01       | 2.82             |
+| maxRelDiff max     | 12.75         | 68.5       | 81.50            |
+| maxRelDiff old ave | 1.72E-02      | 2.45E-02   | 4.96E-02         |
+| maxRelDiff old max | 5.60E-01      | 3.20E-01   | 8.43E-01         |
+| RMS ave            | 1.67E-06      | 2.75E-06   | 4.57E-06         |
+| RMS max            | 1.16E-05      | 1.26E-05   | 2.03E-05         |
 
 Observation: xdlops+gpu has the largest error and nonxdlops+cpu has the smallest error.
 
@@ -295,13 +295,13 @@ The max value is 850, which is generated from
 The following two tables show the effects of some improvements of the validation 
 function on the histograms of the error.
 
-- `accumulate 4` refers to the changes that the cpu validation function accumulates 
+- `acc4` refers to the changes that the cpu validation function accumulates 
 4 multiplication results with fp64 and truncates the sum to fp32 before moving forward.
-- `flush subnormals` refers to the changes that the cpu validation function 
+- `flush` refers to the changes that the cpu validation function 
 flushes subnormal numbers ( $<2^{-14}$ ) in the input to zero.
 
 
-| relDiff old  | original           | accumulate 4       | flush subnormals   |
+| relDiff old  | original           | acc 4              | acc 4 + flush      |
 |:-------------|--------------------|--------------------|--------------------|
 | 0            | 801676(99.858000%) | 802015(99.900226%) | 802369(99.944321%) |
 | (0,1e-6)     | 0(0.000000%)       | 0(0.000000%)       | 0(0.000000%)       |
@@ -317,7 +317,7 @@ flushes subnormal numbers ( $<2^{-14}$ ) in the input to zero.
 | cpuVal       | -0.001073837       | -0.001074791       | 0.125244141        |
 | gpuVal       | -0.001045227       | -0.001045227       | 0.125366211        |
 
-| epsilonDiff | original           | accumulate 4       | flush subnormals   |
+| epsilonDiff | original           | acc 4              | acc 4 + flush      |
 |:------------|--------------------|--------------------|--------------------|
 | 0           | 801676(99.858000%) | 802015(99.900226%) | 802369(99.944321%) |
 | 1           | 1047(0.130416%)    | 722(0.089933%)     | 413(0.051444%)     |
@@ -331,8 +331,8 @@ flushes subnormal numbers ( $<2^{-14}$ ) in the input to zero.
 
 Observations:
 
-1. `accumulate 4` slightly improves the results under both metrics.
-2. `flush subnormals` greatly improves the results under both metrics.
+1. `acc 4` slightly improves the results under both metrics.
+2. `flush` greatly improves the results under both metrics.
 
 # Summary #
 

@@ -17,7 +17,7 @@ printUsage()
     echo "        -c <inputToCpuRunner> input filename to cpu-runner (default: opt_output.mlir)"
     echo "      Print options:"
     echo "        -v: has verify function ==> print the last line"
-    echo "            -e <f16Threshold> tolerance for fp16 datatype (default: 0.25)"
+    echo "            -e <RMSThreshold> tolerance for RMS metric (default: 0.00001)"
     echo "            -u: use the old verifier function (default is to use to new one)"
     echo "        -f: print the first line"
     echo "        if -v and -f are not specified, the whole result is printed"
@@ -85,7 +85,7 @@ callMiopenGen=1
 driverPipeline=2
 wrapper_func=0
 targetIRFunc="miopen"
-f16Threshold="0.25"
+RMSThreshold="0.00001"
 config_index=0
 print_lowering_step=0
 verifyFunc=""
@@ -115,7 +115,7 @@ while getopts "hrlo:m:vc:gi:d:wt:fe:n:b:su" opt; do
             fi
             ;;
         e)
-            f16Threshold=$OPTARG
+            RMSThreshold=$OPTARG
             ;;
         f)
             printFirst=1
@@ -179,7 +179,7 @@ if [[ $callMiopenGen -eq 1 ]]; then
     echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} $validator $verifyFunc > ${DRIVER_INPUT}"
     ## no -prc, i.e. do not generate cpu kernel
     ## i.e. generate gpu kernel
-    ${MIOPEN_GEN} -threshold=${f16Threshold} $validator $verifyFunc ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
+    ${MIOPEN_GEN} -RMS_threshold=${RMSThreshold} $validator $verifyFunc ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
 else
     echo "Read input mlir from $inputMLIR"
     DRIVER_INPUT=$inputMLIR
@@ -228,7 +228,7 @@ if [[ $driverPipeline -eq 1 ]]; then
             if [[ $num == "0" ]]; then
                 msg="Fail!!"
             fi
-            echo "$msg (threshold=${f16Threshold})"
+            echo "$msg (threshold=${RMSThreshold})"
         elif [[ $printFirst -eq 1 ]]; then
             result=$(head -1 tmp_result)
             echo "First line of output: $result"

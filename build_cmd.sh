@@ -6,8 +6,8 @@ printUsage()
     echo "  options:"
     echo "    0: PR_shared_library_build_and_fixed_tests"
     echo "    1: enable all tests"
-    echo "    2: build static library libMLIRMIOpen"
-    echo "    3: build MIOpen with libMLIRMIOpen"
+    echo "    2: build static library librockCompiler"
+    echo "    3: build MIOpen with librockCompiler"
     echo "    4: test MIOpen configs"
     echo "    5: shared library and random tests"
     echo "    6: shared library and fixed tests"
@@ -112,22 +112,22 @@ sharedLib_fixed()
 build_staticLib()
 {
     ##
-    ## build libMLIRMIOpen
+    ## build librockCompiler
     ##
     cd ~/llvm-project-mlir/
     #rm -f build/CMakeCache.txt
     cmake . -G Ninja -B build -DCMAKE_BUILD_TYPE=Release \
           -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
-          -DBUILD_FAT_LIBMLIRMIOPEN=ON
+          -DBUILD_FAT_LIBROCKCOMPILER=ON
     cd build
-    ninja libMLIRMIOpen
-    cmake --install . --component libMLIRMIOpen --prefix ~/dummy/
+    ninja librockCompiler
+    cmake --install . --component librockCompiler --prefix ~/dummy/
 }
 
 build_MIOpen_with_MLIR()
 {
     ##
-    ## build MIOpen with libMLIRMIOpen
+    ## build MIOpen with librockCompiler
     ##
     cd ~/MIOpen
     #rm -f build/CMakeCache.txt

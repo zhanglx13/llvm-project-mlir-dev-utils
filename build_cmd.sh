@@ -146,7 +146,7 @@ build_export_package()
           -D${TARGET}=ON
     cd build
     ninja
-    cmake --install . --prefix /usr/local
+    sudo cmake --install . --prefix /usr/local
 }
 
 build_MIOpen_with_MLIR()
@@ -161,7 +161,7 @@ build_MIOpen_with_MLIR()
           -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
           -DMIOPEN_USE_MLIR=On \
           -DMIOPEN_BACKEND=HIP \
-          -DCMAKE_PREFIX_PATH=~/dummy \
+          -DCMAKE_PREFIX_PATH=/usr/local \
           "-DCMAKE_CXX_FLAGS=-isystem ~/dummy/include" \
           -DMIOPEN_USER_DB_PATH=~/MIOpen/build/MIOpenUserDB \
           "-DMIOPEN_TEST_FLAGS=--verbose --disable-verification-cache"

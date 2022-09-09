@@ -11,6 +11,7 @@ printUsage()
     echo "    4: test MIOpen configs"
     echo "    5: shared library and random tests"
     echo "    6: shared library and fixed tests"
+    echo "    7: build export package for miopen and migraphx"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable xdlops"
@@ -18,6 +19,7 @@ printUsage()
     echo "   gpu validation is chosen only when validation=gpu"
     echo "-r <rand_seed>: choose how to initalize inputs randomly"
     echo "                0, 1, none, or fixed"
+    echo "-e <target>: choose the exported target: miopen (default) or migraphx"
 }
 
 ##
@@ -124,6 +126,29 @@ build_staticLib()
     cmake --install . --component librockCompiler --prefix ~/dummy/
 }
 
+build_export_package()
+{
+    ## $1: target: miopen or migraphx
+    if [[ "$1" == "miopen" ]]; then
+        TARGET=BUILD_FAT_LIBROCKCOMPILER
+    elif [[ "$1" == "migraphx" ]]; then
+        TARGET=BUILD_MIXR_TARGET
+    else
+        echo "Unknown target: $1"
+        exit
+    fi
+    ##
+    ## build librockCompiler
+    ##
+    cd ~/llvm-project-mlir/
+    #rm -f build/CMakeCache.txt
+    cmake . -G Ninja -B build \
+          -D${TARGET}=ON
+    cd build
+    ninja
+    cmake --install . --prefix /usr/local
+}
+
 build_MIOpen_with_MLIR()
 {
     ##
@@ -173,7 +198,8 @@ check_miopen=0
 xdlops=0
 gpu_validation=0
 rand_seed=1
-while getopts "hxmib:v:r:" opt; do
+TARGET=miopen
+while getopts "hxmib:v:r:e:" opt; do
     case "$opt" in
         h)
             printUsage
@@ -198,6 +224,9 @@ while getopts "hxmib:v:r:" opt; do
             ;;
         r)
             rand_seed=$OPTARG
+            ;;
+        e)
+            TARGET=$OPTARG
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2
@@ -237,6 +266,9 @@ case ${build_opt} in
         ;;
     6)
         sharedLib_fixed $xdlops ${gpu_validation}
+        ;;
+    7)
+        build_export_package $TARGET
         ;;
     *)
         echo "unknown build option $OPTARG"

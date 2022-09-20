@@ -24,7 +24,7 @@ mv llvm-project-mlir-dev-utils myscripts
 git clone https://$1@github.com/zhanglx13/orgfiles.git
 
 # Download llvm-project-mlir
-git clone https://$1@github.com/ROCmSoftwarePlatform/llvm-project-mlir.git
+git clone https://$1@github.com/ROCmSoftwarePlatform/rocMLIR.git
 
 # Download MIOpen
 git clone https://$1@github.com/ROCmSoftwarePlatform/MIOpen.git

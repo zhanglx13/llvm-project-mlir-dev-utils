@@ -140,7 +140,7 @@ build_export_package()
     ##
     ## build librockCompiler
     ##
-    cd ~/llvm-project-mlir/
+    cd ~/rocMLIR/
     #rm -f build/CMakeCache.txt
     cmake . -G Ninja -B build \
           -D${TARGET}=ON
@@ -162,7 +162,7 @@ build_MIOpen_with_MLIR()
           -DMIOPEN_USE_MLIR=On \
           -DMIOPEN_BACKEND=HIP \
           -DCMAKE_PREFIX_PATH=/usr/local \
-          "-DCMAKE_CXX_FLAGS=-isystem ~/dummy/include" \
+          "-DCMAKE_CXX_FLAGS=-isystem /usr/local/include" \
           -DMIOPEN_USER_DB_PATH=~/MIOpen/build/MIOpenUserDB \
           "-DMIOPEN_TEST_FLAGS=--verbose --disable-verification-cache"
     cd build
@@ -275,7 +275,7 @@ case ${build_opt} in
         ;;
 esac
 
-cd ~/llvm-project-mlir/build
+cd ~/rocMLIR/build
 if [[ ${check_mlir} -eq 1 ]]; then
     ninja check-mlir
 fi

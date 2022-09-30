@@ -27,20 +27,22 @@ printUsage()
 ##
 PR_shared_library_build_and_fixed_tests()
 {
-    cd ~/llvm-project-mlir/
+    cd ~/rocMLIR/
     rm -f build/CMakeCache.txt
     cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_PR_E2E_TEST_ENABLED=1 \
-          -DMLIR_MIOPEN_DRIVER_XDLOPS_TEST_ENABLED=$1 \
-          -DMLIR_MIOPEN_DRIVER_E2E_TEST_ENABLED=0 \
-          -DMLIR_MIOPEN_DRIVER_MISC_E2E_TEST_ENABLED=0 \
-          -DMLIR_MIOPEN_DRIVER_TEST_GPU_VALIDATION=1 \
-          -DLLVM_LIT_ARGS=-v \
-          -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-          ../
+          -DROCMLIR_DRIVER_ENABLED=1 \
+          -DROCMLIR_DRIVER_PR_E2E_TEST_ENABLED=1 \
+          -DROCMLIR_DRIVER_FORCE_MFMA=OFF \
+          -DROCMLIR_DRIVER_FORCE_DOT=ON \
+          -DROCMLIR_DRIVER_FORCE_ATOMICADD=OFF \
+          -DROCMLIR_DRIVER_E2E_TEST_ENABLED=0 \
+          -DROCK_E2E_TEST_ENABLED=0 \
+          -DROCMLIR_DRIVER_MISC_E2E_TEST_ENABLED=0 \
+          -DROCMLIR_DRIVER_TEST_GPU_VALIDATION=1 \
+          "-DLLVM_LIT_ARGS=-v --time-tests" \
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=1
     cd build
-    ninja
+    ninja check-rocmlir
 }
 
 ##
@@ -247,7 +249,7 @@ done
 
 case ${build_opt} in
     0)
-        PR_shared_library_build_and_fixed_tests $xdlops
+        PR_shared_library_build_and_fixed_tests
         ;;
     1)
         PR_enable_all $xdlops

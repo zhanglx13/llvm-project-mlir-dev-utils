@@ -6,12 +6,11 @@ printUsage()
     echo "  options:"
     echo "    0: PR_shared_library_build_and_fixed_tests"
     echo "    1: enable all tests"
-    echo "    2: build static library librockCompiler"
-    echo "    3: build MIOpen with librockCompiler"
-    echo "    4: test MIOpen configs"
-    echo "    5: shared library and random tests"
-    echo "    6: shared library and fixed tests"
-    echo "    7: build export package for miopen and migraphx"
+    echo "    2: build MIOpen with librockCompiler"
+    echo "    3: test MIOpen configs"
+    echo "    4: shared library and random tests"
+    echo "    5: shared library and fixed tests"
+    echo "    6: build export package for miopen and migraphx"
     echo "-m: run ninja-check-mlir"
     echo "-i: run ninja-check-mlir-miopen"
     echo "-x: enable xdlops"
@@ -32,9 +31,6 @@ PR_shared_library_build_and_fixed_tests()
     cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DROCMLIR_DRIVER_ENABLED=1 \
           -DROCMLIR_DRIVER_PR_E2E_TEST_ENABLED=1 \
-          -DROCMLIR_DRIVER_FORCE_MFMA=ON \
-          -DROCMLIR_DRIVER_FORCE_DOT=ON \
-          -DROCMLIR_DRIVER_FORCE_ATOMICADD=ON \
           -DROCMLIR_DRIVER_E2E_TEST_ENABLED=0 \
           -DROCK_E2E_TEST_ENABLED=0 \
           -DROCMLIR_DRIVER_MISC_E2E_TEST_ENABLED=0 \
@@ -55,9 +51,6 @@ PR_enable_all()
     cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DROCMLIR_DRIVER_ENABLED=1 \
           -DROCMLIR_DRIVER_PR_E2E_TEST_ENABLED=1 \
-          -DROCMLIR_DRIVER_FORCE_MFMA=ON \
-          -DROCMLIR_DRIVER_FORCE_DOT=ON \
-          -DROCMLIR_DRIVER_FORCE_ATOMICADD=ON \
           -DROCMLIR_DRIVER_E2E_TEST_ENABLED=1 \
           -DROCK_E2E_TEST_ENABLED=1 \
           -DROCMLIR_DRIVER_MISC_E2E_TEST_ENABLED=1 \
@@ -116,21 +109,6 @@ sharedLib_fixed()
     ninja check-mlir check-mlir-miopen
 }
 
-build_staticLib()
-{
-    ##
-    ## build librockCompiler
-    ##
-    cd ~/llvm-project-mlir/
-    #rm -f build/CMakeCache.txt
-    cmake . -G Ninja -B build -DCMAKE_BUILD_TYPE=Release \
-          -DMLIR_MIOPEN_DRIVER_ENABLED=1 \
-          -DBUILD_FAT_LIBROCKCOMPILER=ON
-    cd build
-    ninja librockCompiler
-    cmake --install . --component librockCompiler --prefix ~/dummy/
-}
-
 build_export_package()
 {
     ## $1: target: miopen or migraphx
@@ -146,7 +124,7 @@ build_export_package()
     ## build librockCompiler
     ##
     cd ~/rocMLIR/
-    #rm -f build/CMakeCache.txt
+    rm -f build/CMakeCache.txt
     cmake . -G Ninja -B build \
           -D${TARGET}=ON
     cd build
@@ -160,7 +138,7 @@ build_MIOpen_with_MLIR()
     ## build MIOpen with librockCompiler
     ##
     cd ~/MIOpen
-    #rm -f build/CMakeCache.txt
+    rm -f build/CMakeCache.txt
     cmake . -G "Unix Makefiles" -B build -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
           -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
@@ -258,21 +236,18 @@ case ${build_opt} in
         PR_enable_all
         ;;
     2)
-        build_staticLib
-        ;;
-    3)
         build_MIOpen_with_MLIR
         ;;
-    4)
+    3)
         test_MIOpen_configs
         ;;
-    5)
+    4)
         sharedLib_random $xdlops ${gpu_validation} ${rand_seed}
         ;;
-    6)
+    5)
         sharedLib_fixed $xdlops ${gpu_validation}
         ;;
-    7)
+    6)
         build_export_package $TARGET
         ;;
     *)

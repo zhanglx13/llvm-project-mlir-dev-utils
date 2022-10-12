@@ -143,6 +143,7 @@ build_MIOpen_with_MLIR()
           -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
           -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
           -DMIOPEN_USE_MLIR=On \
+          -DMIOPEN_USE_COMPOSABLEKERNEL=Off \
           -DMIOPEN_BACKEND=HIP \
           -DCMAKE_PREFIX_PATH=/usr/local \
           "-DCMAKE_CXX_FLAGS=-isystem /usr/local/include" \

@@ -17,10 +17,14 @@ MB=$(sudo dmidecode -s baseboard-product-name)
 BIOS_VENDOR=$(sudo dmidecode -s bios-vendor)
 BIOS_VERSION=$(sudo dmidecode -s bios-version)
 RELEASE_DATE=$(sudo dmidecode -s bios-release-date)
-HD_CLASS=$(hwinfo --disk | grep "Hardware Class:" | awk '{print $3}')
-HD_DEVICE=$(hwinfo --disk | grep "Device:" | awk '{print $2}')
-HD_DEVICE=${HD_DEVICE#\"}
-HD_DEVICE=${HD_DEVICE%\"}
+HD_SYSFS=$(hwinfo --disk | grep "SysFS ID:" | awk '{print $3}')
+HD_SYSFS=${HD_SYSFS##*/}
+HD_MODULE=$(hwinfo --disk | grep "Driver Modules:" | awk '{print $3}')
+HD_MODULE=${HD_MODULE#\"}
+HD_MODULE=${HD_MODULE%\"}
+HD_CONTROLLER=$(hwinfo --disk | grep "Attached to")
+HD_CONTROLLER=${HD_CONTROLLER##*\(}
+HD_CONTROLLER=${HD_CONTROLLER%%\ controller*}
 
 echo "CPU:            ${CPU_NAME}"
 echo "processors:     ${NUM_PROCESSORS}"
@@ -31,4 +35,4 @@ echo "GPU:            ${GPU_ARCH} x ${NUM_GPUS}"
 echo "GPU vbios:      ${VBIOS}"
 echo "Motherboard:    ${MB}"
 echo "BIOS:           ${BIOS_VENDOR} ${BIOS_VERSION} (${RELEASE_DATE})"
-echo "HD:             ${HD_CLASS} (${HD_DEVICE})"
+echo "HD:             ${HD_SYSFS} (${HD_MODULE} ${HD_CONTROLLER})"

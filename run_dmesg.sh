@@ -1,6 +1,10 @@
 #! /bin/bash
 
 ## $1: testsuite: fixed or random
+if [[ $# -lt 1 ]]; then
+    echo "Must specifiy fixed or random"
+    exit 0
+fi
 WORK_DIR=/home/zhanglx/rocMLIR/build
 CONTAINER=zhanglx-mlir-dev
 CMD="ninja check-rocmlir"

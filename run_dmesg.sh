@@ -7,8 +7,8 @@ if [[ $# -lt 1 ]]; then
 fi
 WORK_DIR=/home/zhanglx/rocMLIR/build
 CONTAINER=zhanglx-mlir-dev
-CMD="ninja check-rocmlir"
-RESULT_DIR=nightly_$1
+CMD="ninja check-mlir"
+RESULT_DIR=/home/lixzhang/nightly_$1
 
 echo "Start container"
 docker container start ${CONTAINER}
@@ -23,11 +23,12 @@ if [[ "$1" == "random" ]]; then
     echo "Config and build for nightly random tests"
     docker exec --workdir ${WORK_DIR} ${CONTAINER} cmake -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo -DROCMLIR_DRIVER_ENABLED=1 -DROCMLIR_DRIVER_PR_E2E_TEST_ENABLED=0 -DROCMLIR_DRIVER_E2E_TEST_ENABLED=1 -DROCK_E2E_TEST_ENABLED=1 -DROCMLIR_DRIVER_RANDOM_DATA_SEED=1 -DROCMLIR_DRIVER_MISC_E2E_TEST_ENABLED=0 -DROCMLIR_DRIVER_TEST_GPU_VALIDATION=0 "-DLLVM_LIT_ARGS=-v --time-tests" -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
 fi
+docker exec --workdir ${WORK_DIR} ${CONTAINER} ninja check-rocmlir-build-only
 ## Stop the container
 echo "Stop container"
 docker container stop ${CONTAINER}
 
-for n in a b
+for n in 1
 do
     echo "-----------------------------------------------------------"
     echo "Start run $n"
@@ -38,9 +39,9 @@ do
     echo "Start container"
     docker container start ${CONTAINER}
     ## Execute the command in the container
-    docker exec --workdir ${WORK_DIR} ${CONTAINER} ${CMD} | ts '[%H:%M:%S]' | tee -a ~/${RESULT_DIR}/lit_result$n.txt
+    docker exec --workdir ${WORK_DIR} ${CONTAINER} ${CMD} | ts '[%H:%M:%S]' | tee -a ${RESULT_DIR}/lit_result$n.txt
     ## Obtain the dmesg
-    dmesg --kernel --ctime --userspace --decode > ~/${RESULT_DIR}/dmesg_log$n.txt
+    dmesg --kernel --ctime --userspace --decode > ${RESULT_DIR}/dmesg_log$n.txt
     ## Stop the container
     echo "Stop container"
     docker container stop ${CONTAINER}

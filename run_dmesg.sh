@@ -7,7 +7,7 @@ if [[ $# -lt 1 ]]; then
 fi
 WORK_DIR=/home/zhanglx/rocMLIR/build
 CONTAINER=zhanglx-mlir-dev
-CMD="ninja check-mlir"
+CMD="ninja check-rocmlir"
 RESULT_DIR=/home/lixzhang/nightly_$1
 
 echo "Start container"

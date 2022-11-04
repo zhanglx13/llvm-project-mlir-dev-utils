@@ -12,7 +12,7 @@ do
     echo "Start run $n"
     echo "-------------------------------------------------"
     ## Clear the dmesg buffer
-    sudo dmesg -C
+    dmesg -C
     ## Start the container
     echo "Start container"
     docker container start ${CONTAINER}

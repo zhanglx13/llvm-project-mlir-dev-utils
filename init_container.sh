@@ -10,7 +10,7 @@ if [[ $# -lt 1 ]]; then
     exit
 fi
 
-WORK_DIR=/home/zhanglx/rocMLIR/build
+WORK_DIR=/home/zhanglx
 CONTAINER=zhanglx-mlir-dev
 
 ## Download the script

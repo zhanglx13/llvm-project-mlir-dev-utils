@@ -37,10 +37,8 @@ extractLine() {
 
 ## Obtain the number of HDs
 NUM_HD=$(hwinfo --disk | grep "SysFS ID:" | wc -l)
-echo "Number of HD: ${NUM_HD}"
 for i in $(seq 1 ${NUM_HD})
 do
-    #echo "$i"
     HD_SYSFS=$(hwinfo --disk | grep "SysFS ID:" | awk '{print $3}' | extractLine $i)
     HD_SYSFS=${HD_SYSFS##*/}
     HD_MODULE=$(hwinfo --disk | grep "Driver Modules:" | awk '{print $3}' | extractLine $i)

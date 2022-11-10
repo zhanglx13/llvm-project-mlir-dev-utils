@@ -36,15 +36,16 @@ extractLine() {
 }
 
 ## Obtain the number of HDs
-NUM_HD=$(hwinfo --disk | grep "SysFS ID:" | wc -l)
+hwinfo --disk > disk_info
+NUM_HD=$(cat disk_info | grep "SysFS ID:" | wc -l)
 for i in $(seq 1 ${NUM_HD})
 do
-    HD_SYSFS=$(hwinfo --disk | grep "SysFS ID:" | awk '{print $3}' | extractLine $i)
+    HD_SYSFS=$(cat disk_info | grep "SysFS ID:" | awk '{print $3}' | extractLine $i)
     HD_SYSFS=${HD_SYSFS##*/}
-    HD_MODULE=$(hwinfo --disk | grep "Driver Modules:" | awk '{print $3}' | extractLine $i)
+    HD_MODULE=$(cat disk_info | grep "Driver Modules:" | awk '{print $3}' | extractLine $i)
     HD_MODULE=${HD_MODULE#\"}
     HD_MODULE=${HD_MODULE%\"}
-    HD_CONTROLLER=$(hwinfo --disk | grep "Attached to" | extractLine $i)
+    HD_CONTROLLER=$(cat disk_info | grep "Attached to" | extractLine $i)
     HD_CONTROLLER=${HD_CONTROLLER##*\(}
     HD_CONTROLLER=${HD_CONTROLLER%%\ controller*}
     if [[ $i -eq 1 ]]; then

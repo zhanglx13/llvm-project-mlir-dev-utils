@@ -17,14 +17,7 @@ MB=$(sudo dmidecode -s baseboard-product-name)
 BIOS_VENDOR=$(sudo dmidecode -s bios-vendor)
 BIOS_VERSION=$(sudo dmidecode -s bios-version)
 RELEASE_DATE=$(sudo dmidecode -s bios-release-date)
-HD_SYSFS=$(hwinfo --disk | grep "SysFS ID:" | awk '{print $3}')
-HD_SYSFS=${HD_SYSFS##*/}
-HD_MODULE=$(hwinfo --disk | grep "Driver Modules:" | awk '{print $3}')
-HD_MODULE=${HD_MODULE#\"}
-HD_MODULE=${HD_MODULE%\"}
-HD_CONTROLLER=$(hwinfo --disk | grep "Attached to")
-HD_CONTROLLER=${HD_CONTROLLER##*\(}
-HD_CONTROLLER=${HD_CONTROLLER%%\ controller*}
+
 
 echo "CPU:            ${CPU_NAME}"
 echo "processors:     ${NUM_PROCESSORS}"
@@ -35,4 +28,30 @@ echo "GPU:            ${GPU_ARCH} x ${NUM_GPUS}"
 echo "GPU vbios:      ${VBIOS}"
 echo "Motherboard:    ${MB}"
 echo "BIOS:           ${BIOS_VENDOR} ${BIOS_VERSION} (${RELEASE_DATE})"
-echo "HD:             ${HD_SYSFS} (${HD_MODULE} ${HD_CONTROLLER})"
+
+extractLine() {
+    ## $1: input
+    ## $2: line number
+    head -n $2 $1 | tail -1
+}
+
+## Obtain the number of HDs
+hwinfo --disk > /tmp/disk_info
+NUM_HD=$(cat /tmp/disk_info | grep "SysFS ID:" | wc -l)
+for i in $(seq 1 ${NUM_HD})
+do
+    HD_SYSFS=$(cat /tmp/disk_info | grep "SysFS ID:" | awk '{print $3}' | extractLine $i)
+    HD_SYSFS=${HD_SYSFS##*/}
+    HD_MODULE=$(cat /tmp/disk_info | grep "Driver Modules:" | awk '{print $3}' | extractLine $i)
+    HD_MODULE=${HD_MODULE#\"}
+    HD_MODULE=${HD_MODULE%\"}
+    HD_CONTROLLER=$(cat /tmp/disk_info | grep "Attached to" | extractLine $i)
+    HD_CONTROLLER=${HD_CONTROLLER##*\(}
+    HD_CONTROLLER=${HD_CONTROLLER%%\ controller*}
+    if [[ $i -eq 1 ]]; then
+        echo "HD:             ${HD_SYSFS} (${HD_MODULE} ${HD_CONTROLLER})"
+    else
+        echo "                ${HD_SYSFS} (${HD_MODULE} ${HD_CONTROLLER})"
+    fi
+done
+

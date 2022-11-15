@@ -77,6 +77,8 @@ configCLToVar[padding_w_l]=paddingWidthLeft
 configCLToVar[padding_w_r]=paddingWidthRight
 configCLToVar[t]=tensorDataType
 
+populateDefaults=0
+
 ##
 ## conv2d configs and their default values
 ##
@@ -111,6 +113,7 @@ print_config() {
     ##     0: single row without names
     ##     1: single row with names
     ##     2: multi rows
+    ##     3: same as 1 but skip operation and datatype
     if [[ $1 -eq 0 ]]; then
         for config in "${orders[@]}";
         do
@@ -118,6 +121,12 @@ print_config() {
                 echo -n "${configArr[$config]} "
             elif [[ $2 -eq 1 ]]; then
                 echo -n "-${configVarToCL[$config]}=${configArr[$config]} "
+            elif [[ $2 -eq 3 ]];then
+                if [[ "$config" == "operation" ]] || [[ "$config" == "tensorDataType" ]];then
+                    continue
+                else
+                    echo -n "-${configVarToCL[$config]}=${configArr[$config]} "
+                fi
             else
                 echo "$config (${configVarToCL[$config]}): ${configArr[$config]}"
             fi
@@ -127,11 +136,15 @@ print_config() {
         fi
     else
         ## If poulate defaults, then only print layouts
-        echo -n "-operation=${configArr[operation]} "
+        if [[ $2 -ne 3 ]];then
+            echo -n "-operation=${configArr[operation]} "
+        fi
         echo -n "-fil_layout=${configArr[filterLayout]} "
         echo -n "-in_layout=${configArr[inputLayout]} "
         echo -n "-out_layout=${configArr[outputLayout]} "
-        echo -n "-t ${configArr[tensorDataType]} "
+        if [[ $2 -ne 3 ]];then
+            echo -n "-t ${configArr[tensorDataType]} "
+        fi
         echo "-p"
     fi
 }

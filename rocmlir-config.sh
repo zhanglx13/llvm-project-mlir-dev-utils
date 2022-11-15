@@ -2,7 +2,9 @@
 
 source rocmlir-config-params.sh
 
-CONFIG_DB=/home/zhanglx/config_db
+CONFIG_DB=/home/zhanglx/conv2d_host_validation_f32_fwd_db
+
+TOML_FILE=/home/zhanglx/rocMLIR/mlir/test/e2e/conv2d_host_validation_f32_fwd.toml
 
 
 ## process the input mlir test file
@@ -10,12 +12,13 @@ CONFIG_DB=/home/zhanglx/config_db
 ##   2. Extract values of each parameter and fill in the configArr
 ##   3. Insert the configArr into the config_db if not duplicate
 process_input() {
-    echo "process input file: ${INPUT_FILE}"
+    echo "processing input file: ${INPUT_FILE}"
     cnt=0
     grep "RUN:" ${INPUT_FILE} > configs.txt
     while read -r line;
     do
         ((cnt++))
+        echo -n "#### test $cnt: "
         ## extract config from each test
         line=${line%%|*}
         line=${line/\/\/\ RUN:\ rocmlir-gen/}
@@ -24,19 +27,25 @@ process_input() {
         line=${line/\%random_data}
         line=${line/\%rocmlir_gen_flags}
         config=$(echo $line | xargs)
-        #echo "Orig: $config"
-
+        echo "$config"
         refresh_config_with_cmd_defaults
-        update_config $config
+        update_config "$config"
+        ## pretty print the config
+        entry=$(print_config $populateDefaults 3)
+        #echo "populateDefaults = $populateDefaults"
+        #echo "#### entry: $entry"
+        match_and_insert "$entry" 2
     done < configs.txt
-    echo "lines: $cnt"
+    echo "processed $cnt tests in ${INPUT_FILE}"
 }
 
 ## Use the given config ($1) to update the parameters in configArr
+## and set populateDefaults if -p or -p=true is in the config
 update_config() {
     ## $1: config input
-    str=$config
+    str=$1
     #str=" -padding_w=1"
+    ## replace -- with - for easy processing
     str=${str//--/-}
     #echo "new str: $str"
     populateDefaults=0
@@ -52,7 +61,7 @@ update_config() {
         str=${str%-*}
         #echo "str: $str"
         #echo "pair: $pair (${#pair})"
-        ## -p
+        ## special case for -p
         if [[ "$pair" == "p" ]];then
             populateDefaults=1
             #echo "Populate defaults!!!"
@@ -88,18 +97,15 @@ update_config() {
             fi
         fi
     done
-    #echo -n "After: "
-    #print_config $populateDefaults 1 | tee -a ${CONFIG_DB}
-    #print_config $populateDefaults 1
-    entry=$(print_config $populateDefaults 1)
-    #echo "entry: $entry"
-    match_and_insert "$entry"
 }
 
 ## Match the given config entry in the config_db
 ## and insert the entry into the db if not exist
 match_and_insert() {
     ## $1: config entry
+    ## $2: mode
+    ##     1: match only, do not insert the entry
+    ##     2: insert the entry if not match
     entry=$1
     shouldInsert=1
     entry=$(echo $entry | xargs)
@@ -107,21 +113,21 @@ match_and_insert() {
     dbN=1
     while read -r line;
     do
+        #echo "line in db: $line"
         if [[ "$entry" == $"$line" ]]; then
             shouldInsert=0
-            echo "match db $dbN"
-            #echo "line: $line (${#line})"
-            #echo "entr: $entry (${#entry})"
+            echo "  Match line $dbN in ${CONFIG_DB}"
             break
         fi
         ((dbN++))
     done < ${CONFIG_DB}
 
-    if [[ $shouldInsert -eq 1 ]];then
-        echo "Insert new config into db: $entry"
+    if [[ $shouldInsert -eq 1 ]] && [[ $2 -eq 2 ]];then
+        echo "    Insert new config into ${CONFIG_DB}: $entry"
         echo $entry >> ${CONFIG_DB}
     fi
 }
+
 
 check_config_str() {
     echo "Process input config string: ${CONFIG_STR}"
@@ -166,10 +172,3 @@ fi
 if [[ ${CONFIG_STR} != "" ]];then
     check_config_str
 fi
-
-
-
-
-#refresh_config_with_cmd_defaults
-#print_config 0
-#print_config 1

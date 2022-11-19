@@ -77,6 +77,17 @@ configCLToVar[padding_w_l]=paddingWidthLeft
 configCLToVar[padding_w_r]=paddingWidthRight
 configCLToVar[t]=tensorDataType
 
+#ROCMLIR_DIR=$(git rev-parse --show-toplevel || echo "${HOME}/rocMLIR/")
+ROCMLIR_DIR=${HOME}/rocMLIR/
+E2E_CONV_DB_DIR=${ROCMLIR_DIR}/mlir/test/e2e
+declare -a convDB
+convDB+=(MixedConvLayouts)
+convDB+=(PaddedGemmConfig)
+convDB+=(Resnet50Config)
+convDB+=(Resnext101Config)
+convDB+=(conv2d_regression_fwd)
+convDB+=(conv2d_regression_bwd)
+
 populateDefaults=0
 
 print_usage() {
@@ -91,6 +102,20 @@ print_usage() {
     echo "        -p: drop -operation"
     echo "        -l: drop layouts"
     echo "        -s: search mode, i.e. do not insert config into the database"
+    echo "-m checkConfig -c \"<config string>\": search the given config in the conv database:"
+    print_convDB
+}
+
+print_convDB() {
+    for db in ${convDB[@]};
+    do
+        echo -n "    $db "
+        if [ -f ${E2E_CONV_DB_DIR}/$db.toml ];then
+            printf "\xE2\x9C\x94\n"
+        else
+            printf "\xE2\x9D\x8C\n"
+        fi
+    done
 }
 
 ##
@@ -197,7 +222,9 @@ process_input() {
         echo "Need input file (-f <input filename>) and db (-d <db filename>)"
         exit 0
     fi
-    echo "processing input file: ${INPUT_FILE}"
+        if [[ $verbose -eq 1 ]];then
+        echo "processing input file: ${INPUT_FILE}"
+    fi
     ## Check input file format
     input_format=""
     if [[ ${INPUT_FILE} == *".mlir"* ]];then
@@ -215,16 +242,15 @@ process_input() {
     while read -r line;
     do
         ((cnt++))
-        echo "#### test $cnt in ${INPUT_FILE}"
-        ## extract config from each test
-        config=$(preprocess_config "$line")
-        refresh_config_with_cmd_defaults
-        update_config "$config"
-        ## pretty print the config
-        entry=$(print_config $populateDefaults $FORMAT ${DROP_DT} ${DROP_DIR} ${DROP_LAYOUTS})
+        if [[ $verbose -eq 1 ]];then
+            echo "#### test $cnt in ${INPUT_FILE}"
+        fi
+        entry=$(format_config "$line")
         match_and_insert "$entry" $INSERT
     done < configs.txt
-    echo "processed $cnt tests in ${INPUT_FILE}"
+    if [[ $verbose -eq 1 ]];then
+        echo "processed $cnt tests in ${INPUT_FILE}"
+    fi
 }
 
 ## Remove unuseful information from the given line or string
@@ -242,6 +268,18 @@ preprocess_config() {
     ## remove spaces
     config=$(echo $line | xargs)
     echo "$config"
+}
+
+## Format the given config
+format_config() {
+    ## $1: target config
+    ## return: formatted entry
+    config=$(preprocess_config "$1")
+    refresh_config_with_cmd_defaults
+    update_config "$config"
+    ## pretty print the config
+    entry=$(print_config $populateDefaults $FORMAT ${DROP_DT} ${DROP_DIR} ${DROP_LAYOUTS})
+    echo $entry | xargs
 }
 
 ## Use the given config ($1) to update the parameters in configArr
@@ -311,20 +349,26 @@ match_and_insert() {
     shouldInsert=1
     entry=$(echo $entry | xargs)
     dbN=1
-    while read -r line;
-    do
-        if [[ "$entry" == $"$line" ]]; then
-            shouldInsert=0
-            echo "  Match config $dbN in ${CONFIG_DB}"
-            break
-        fi
-        ((dbN++))
-    done < ${CONFIG_DB}
+    if [ -f ${CONFIG_DB} ];then
+        while read -r line;
+        do
+            if [[ "$entry" == $"$line" ]]; then
+                shouldInsert=0
+                if [[ $verbose -eq 1 ]];then
+                    echo "  Match config $dbN in ${CONFIG_DB}"
+                fi
+                break
+            fi
+            ((dbN++))
+        done < ${CONFIG_DB}
+    fi
 
     if [[ $shouldInsert -eq 1 ]] && [[ $2 -eq 2 ]];then
-        echo "    Insert new config into ${CONFIG_DB}"
+        if [[ $verbose -eq 1 ]];then
+            echo "    Insert new config into ${CONFIG_DB}"
+        fi
         echo $entry >> ${CONFIG_DB}
-    elif [[ $shouldInsert -eq 1 ]];then
+    elif [[ $shouldInsert -eq 1 ]] && [[ $verbose -eq 1 ]];then
         echo "    Not found in ${CONFIG_DB}"
     fi
 }
@@ -345,11 +389,40 @@ gen_toml_body(){
 }
 
 check_config_str() {
-    if [[ "${CONFIG_STR}" == "" ]] || [[ "${CONFIG_DB}" == "" ]];then
-        echo "Need config string (-c <config>) and db (-d <db filename>)"
+    if [[ "${CONFIG_STR}" == "" ]];then
+        echo "Need config string (-c <config>)"
         exit 0
     fi
-    echo "Process input config string: ${CONFIG_STR}"
+    #echo "Process input config string: ${CONFIG_STR}"
+    DROP_DT=1
+    DROP_DIR=1
+    DROP_LAYOUTS=1
+    entry=$(format_config "${CONFIG_STR}")
+    echo "entry: $entry"
+    foundOne=0
+    for db in ${convDB[@]};
+    do
+        #echo "Checking ${E2E_CONV_DB_DIR}/$db.toml"
+        ## for each toml file t.toml
+        ## 1. construct a database t.db
+        ## 2. search entry in t.db
+        ## 3. remove t.db
+        ./rocmlir-config.sh -m buildDB -f ${E2E_CONV_DB_DIR}/$db.toml -d $db.db -ypl
+        dbN=1
+        while read -r line;
+        do
+            if [[ "$entry" == "$line" ]];then
+                echo "!! Match config $dbN in $db.toml !!"
+                foundOne=1
+            fi
+            ((dbN++))
+        done < $db.db
+        rm $db.db
+    done
+    ## Not found in any database
+    if [[ $foundOne -eq 0 ]];then
+        echo "!! Not found in any database !!"
+    fi
 }
 
 
@@ -365,7 +438,8 @@ DROP_DT=0      # -y
 DROP_DIR=0     # -p
 DROP_LAYOUTS=0 # -l
 INSERT=2       # -s
-while getopts "hf:c:m:d:t:o:ypls" opt; do
+verbose=0      # -v
+while getopts "hf:c:m:d:t:o:yplsv" opt; do
     case "$opt" in
         h)
             print_usage
@@ -400,6 +474,9 @@ while getopts "hf:c:m:d:t:o:ypls" opt; do
             ;;
         s)
             INSERT=1
+            ;;
+        v)
+            verbose=1
             ;;
         :)
             echo "Option -$OPTARG requires an argument." >&2

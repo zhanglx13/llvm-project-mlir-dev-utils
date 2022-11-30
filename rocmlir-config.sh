@@ -87,6 +87,7 @@ convDB+=(Resnet50Config)
 convDB+=(Resnext101Config)
 convDB+=(conv2d_regression_fwd)
 convDB+=(conv2d_regression_bwd)
+convDB+=(conv2d_wrw_perf_config)
 
 populateDefaults=0
 

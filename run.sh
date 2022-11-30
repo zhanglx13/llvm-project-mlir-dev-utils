@@ -44,7 +44,7 @@ print_lowestIR()
 {
     ## run miopen-opt
     ## all these passes are from mlir-rocm-runner
-    ${MIOPEN_OPT} \
+    ${ROCMLIR_OPT} \
         -convert-scf-to-cf \
         -gpu-kernel-outlining \
         -pass-pipeline='gpu.module(strip-debuginfo,convert-gpu-to-rocdl,gpu-to-hsaco{chip=gfx1030}),func.func(gpu-async-region,convert-math-to-llvm)' \
@@ -174,12 +174,12 @@ source configs.sh
 ##
 if [[ $callMiopenGen -eq 1 ]]; then
     configName=config${config_index}
-    MIOPEN_GEN_CMD=${!configName}
+    ROCMLIR_GEN_CMD=${!configName}
     DRIVER_INPUT="miopen-gen_result.mlir"
-    echo "Generate input mlir from miopen-gen ${MIOPEN_GEN_CMD} $validator $verifyFunc > ${DRIVER_INPUT}"
+    echo "Generate input mlir from miopen-gen ${ROCMLIR_GEN_CMD} $validator $verifyFunc > ${DRIVER_INPUT}"
     ## no -prc, i.e. do not generate cpu kernel
     ## i.e. generate gpu kernel
-    ${MIOPEN_GEN} -RMS_threshold=${RMSThreshold} $validator $verifyFunc ${MIOPEN_GEN_CMD} -o  ${DRIVER_INPUT}
+    ${ROCMLIR_GEN} -RMS_threshold=${RMSThreshold} $validator $verifyFunc ${ROCMLIR_GEN_CMD} -o  ${DRIVER_INPUT}
 else
     echo "Read input mlir from $inputMLIR"
     DRIVER_INPUT=$inputMLIR
@@ -191,14 +191,14 @@ fi
 ##
 if [[ ${print_lowering_step} -eq 1 ]]; then
     LOWERING_DIR=./lowering_IR
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params ${DRIVER_INPUT} > ${LOWERING_DIR}/0-affix-params.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm ${DRIVER_INPUT} > ${LOWERING_DIR}/1-conv-to-gemm.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise ${DRIVER_INPUT} > ${LOWERING_DIR}/2-blockwise.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise ${DRIVER_INPUT} > ${LOWERING_DIR}/3-threadwise.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering ${DRIVER_INPUT} > ${LOWERING_DIR}/4-gemm-lowering.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops ${DRIVER_INPUT} > ${LOWERING_DIR}/5-sugar-to-loops.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf ${DRIVER_INPUT} > ${LOWERING_DIR}/6-loops-to-cf.mlir
-    ${MLIR_MIOPEN_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf -convert-miopen-to-gpu ${DRIVER_INPUT} > ${LOWERING_DIR}/7-miopen-to-gpu.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params ${DRIVER_INPUT} > ${LOWERING_DIR}/0-affix-params.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm ${DRIVER_INPUT} > ${LOWERING_DIR}/1-conv-to-gemm.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise ${DRIVER_INPUT} > ${LOWERING_DIR}/2-blockwise.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise ${DRIVER_INPUT} > ${LOWERING_DIR}/3-threadwise.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering ${DRIVER_INPUT} > ${LOWERING_DIR}/4-gemm-lowering.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops ${DRIVER_INPUT} > ${LOWERING_DIR}/5-sugar-to-loops.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf ${DRIVER_INPUT} > ${LOWERING_DIR}/6-loops-to-cf.mlir
+    ${ROCMLIR_DRIVER} -miopen-affix-params -miopen-conv-to-gemm -miopen-gridwise-gemm-to-blockwise -miopen-blockwise-gemm-to-threadwise -miopen-threadwise-gemm-lowering -miopen-sugar-to-loops -miopen-loops-to-cf -convert-miopen-to-gpu ${DRIVER_INPUT} > ${LOWERING_DIR}/7-miopen-to-gpu.mlir
 fi
 
 ##
@@ -207,7 +207,7 @@ fi
 if [[ $driverPipeline -eq 1 ]]; then
     ## go through the driver
     printf "Running mlir-miopen-driver ${DRIVER_INPUT} > driver_output.mlir ... "
-    ${MLIR_MIOPEN_DRIVER} -c ${DRIVER_INPUT} > driver_output.mlir
+    ${ROCMLIR_DRIVER} -c ${DRIVER_INPUT} > driver_output.mlir
     echo " Done!!"
     ## get the lowest IR before execution
     if [[ $lowestIR -eq 1 ]]; then
@@ -218,7 +218,7 @@ if [[ $driverPipeline -eq 1 ]]; then
     ## Execute the generated IR
     if [[ $run -eq 1 ]]; then
         printf "Running mlir-rocm-runner ${inputToRocmRunner} > tmp_result ... "
-        ${MLIR_ROCM_RUNNER} $inputToRocmRunner > tmp_result
+        ${MLIR_CPU_RUNNER} $inputToRocmRunner > tmp_result
         echo " Done!!"
         ## process result according to whether there is a verify function
         if [[ $hasVerify -eq 1 ]]; then
@@ -261,7 +261,7 @@ i=1
 echo "testing with $config"
 while IFS= read -r line
 do
-    ${MIOPEN_GEN} -pv ${line} | ${MLIR_MIOPEN_DRIVER_CMD} | ${MLIR_ROCM_RUNNER_CMD} > tmp_result
+    ${ROCMLIR_GEN} -pv ${line} | ${ROCMLIR_DRIVER_CMD} | ${MLIR_ROCM_RUNNER_CMD} > tmp_result
     result=$(tail -1 tmp_result)
     echo "$i: $result"
     ((i++))

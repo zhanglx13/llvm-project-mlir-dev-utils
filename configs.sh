@@ -97,10 +97,13 @@ config16="-batchsize=256 -in_channels=256 -in_h=56 -in_w=56 -out_channels=512 -f
 
 # conv2d_regression_fwd/config_1_1.mlir
 # failed with float random inputs
-config28="-p --operation conv2d -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -t f32 -rand_type float  --arch gfx1030 -pv -rand 1 -p_verify=off"
+config28="-p --operation conv2d -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -t f32 -rand_type float  --arch gfx1030 -rand 1 -p_verify=off"
 
 # conv2d_regression_bwd/config_17_7.mlir
-config29="-groupsize=1 -batchsize=512 -in_channels=256 -out_channels=512 -in_h=7 -in_w=7 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h_l=1 -padding_h_r=1 -padding_w_l=1 -padding_w_r=1 --operation conv2d_bwd_weight -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -t f32 -rand_type float  --arch gfx1030 -pv -rand 1"
+config29="-groupsize=1 -batchsize=512 -in_channels=256 -out_channels=512 -in_h=7 -in_w=7 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h_l=1 -padding_h_r=1 -padding_w_l=1 -padding_w_r=1 --operation conv2d_bwd_weight -fil_layout=kyxc -in_layout=nhwc -out_layout=nhwk -t f32 -rand_type float  --arch gfx90a -pv_with_gpu -rand 1"
 
 # conv2d_regression_fwd/config_64_1.mlir
-config30="-groupsize=1 -batchsize=256 -in_channels=128 -out_channels=128 -in_h=58 -in_w=58 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=2 -conv_stride_w=2 -padding_h_l=0 -padding_h_r=0 -padding_w_l=0 -padding_w_r=0 --operation conv2d -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -t f32 -rand_type float  --arch gfx1030 -pv -rand 1 -p_verify=off"
+config30="-groupsize=1 -batchsize=256 -in_channels=128 -out_channels=128 -in_h=58 -in_w=58 -fil_h=3 -fil_w=3 -dilation_h=1 -dilation_w=1 -conv_stride_h=2 -conv_stride_w=2 -padding_h_l=0 -padding_h_r=0 -padding_w_l=0 -padding_w_r=0 --operation conv2d -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -t f32 -rand_type float  --arch gfx90a -pv -rand 1"
+
+# bwd/config_1_5.mlir
+config31="-groupsize=1 -batchsize=64 -in_channels=32 -out_channels=64 -in_h=32 -in_w=32 -fil_h=1 -fil_w=1 -dilation_h=1 -dilation_w=1 -conv_stride_h=1 -conv_stride_w=1 -padding_h_l=0 -padding_h_r=0 -padding_w_l=0 -padding_w_r=0 --operation conv2d_bwd_weight -fil_layout=kcyx -in_layout=nchw -out_layout=nkhw -t f32 -rand_type float  --arch gfx90a -rand 1 -RMS_threshold=0.00000003 -RMS_threshold=0.003"

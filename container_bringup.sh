@@ -23,9 +23,18 @@ mv llvm-project-mlir-dev-utils myscripts
 # setup orgfiles
 git clone https://$1@github.com/zhanglx13/orgfiles.git
 
-# Download llvm-project-mlir
+# Download rocMLIR
 git clone https://$1@github.com/ROCmSoftwarePlatform/rocMLIR.git
 
 # Download MIOpen
-git clone https://$1@github.com/ROCmSoftwarePlatform/MIOpen.git
+# git clone https://$1@github.com/ROCmSoftwarePlatform/MIOpen.git
+
+# Download triton
+git clone https://$1@github.com/ROCmSoftwarePlatform/triton.git
+cd triton
+git co dot-rocMLIR
+cd ..
+
+# Download msft
+git clone https://$1@github.com/ROCmSoftwarePlatform/msft_amd_ai_operators.git
 

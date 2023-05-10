@@ -2,7 +2,7 @@
 
 ##
 ## $1: username:token
-##
+## $2: container name
 
 if [[ $# -lt 1 ]]; then
     echo "Need to provide credentials to download github repos"
@@ -11,7 +11,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 WORK_DIR=/home/zhanglx
-CONTAINER=zhanglx-mlir-dev
+CONTAINER=$2
 
 ## Download the script
 docker exec --workdir ${WORK_DIR} ${CONTAINER} wget https://raw.githubusercontent.com/zhanglx13/llvm-project-mlir-dev-utils/main/container_bringup.sh

@@ -30,8 +30,8 @@ git clone https://$1@github.com/ROCm/rocMLIR.git
 # git clone https://$1@github.com/ROCmSoftwarePlatform/MIOpen.git
 
 # Download triton
-git clone https://$1@github.com/zhanglx13/triton.git AMD-triton
-git clone https://$1@github.com/triton-lang/triton.git OAI-triton
+git clone https://$1@github.com/zhanglx13/triton.git OAI-triton
+git clone https://$1@github.com/ROCm/triton.git AMD-triton
 
 # Download msft
 git clone https://$1@github.com/ROCmSoftwarePlatform/msft_amd_ai_operators.git

@@ -1,0 +1,43 @@
+FROM rocm/pytorch:latest-release
+
+## Upgrade pip to the latest version
+RUN pip install --upgrade pip
+## Upgrade pytorch to the latest
+RUN pip uninstall -y torch torchvision torchaudio
+RUN pip3 install --pre torch  --index-url https://download.pytorch.org/whl/nightly/rocm6.1
+## Remove the pre-installed triton
+RUN pip uninstall -y triton
+RUN rm -rf /opt/conda/envs/py_3.9/lib/python3.9/site-packages/triton
+## Install amd_smi (should not be necessary later)
+RUN pip install /opt/rocm/share/amd_smi
+## Upgrade numpy
+#RUN pip install numpy --upgrade
+## Install tools used by triton tutorials
+#RUN pip3 install matplotlib pandas
+ENV TZ=America/Chicago
+RUN apt-get update
+RUN apt-add-repository ppa:kelleyk/emacs && apt-get update
+RUN apt --purge remove emacs
+RUN apt --purge remove emacs-common
+RUN apt --fix-broken install
+RUN apt autoremove -y
+RUN apt install emacs27 -y
+RUN apt-get install -y vim less  mlocate silversearcher-ag keychain htop rcm
+
+COPY ./.bashrc /root/
+COPY ./exa_dir /root/exa
+
+# CHANGE THIS
+
+# git alias
+RUN git config --global alias.co checkout
+RUN git config --global alias.br branch
+RUN git config --global alias.ci commit
+RUN git config --global alias.st status
+RUN git config --global user.name "Lixun Zhang"
+RUN git config --global user.email "lixun.zhang@amd.com"
+
+#ENV ROCR_VISIBLE_DEVICES=3
+# Keep container alive
+# CMD tmux new-session -d && tail -f /dev/null
+CMD /bin/bash

@@ -31,8 +31,8 @@ RUN apt-get install -y vim less  mlocate \
 # --shell here is optional and my preference
 # IMPORTANT: CHANGE THE LINES BELOW IF BOROWING THIS
 # Both the IDs and the username need to be changed to yours
-RUN addgroup --gid {GID} zhanglx
-RUN useradd -d /home/zhanglx -g zhanglx --no-create-home -u {UID} --shell /bin/bash zhanglx
+RUN addgroup --gid ${GID} zhanglx
+RUN useradd -d /home/zhanglx -g zhanglx --no-create-home -u ${UID} --shell /bin/bash zhanglx
 #RUN chown root:root /etc/gshadow
 RUN usermod -aG sudo zhanglx
 RUN usermod -aG video zhanglx
@@ -42,7 +42,7 @@ RUN mkdir /home/zhanglx
 RUN mkdir /home/zhanglx/exa
 RUN mkdir /home/zhanglx/exa/bin
 COPY ./.bashrc /home/zhanglx/
-COPY ./exa /home/zhanglx/exa/bin/
+COPY ./exa/bin/exa /home/zhanglx/exa/bin/
 RUN chown -R zhanglx:zhanglx /home/zhanglx 
 
 # Make sudo work without a password

@@ -11,6 +11,7 @@ RUN pip3 install --pre torch  --index-url https://download.pytorch.org/whl/night
 ## Remove the pre-installed triton
 RUN pip uninstall -y triton
 RUN rm -rf /opt/conda/envs/py_3.9/lib/python3.9/site-packages/triton
+RUN pip install pandas
 ## Install amd_smi (should not be necessary later)
 #RUN pip install /opt/rocm/share/amd_smi
 

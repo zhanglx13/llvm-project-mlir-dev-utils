@@ -1,4 +1,4 @@
-FROM rocm/pytorch:latest-release
+FROM rocm/pytorch:rocm6.1_ubuntu22.04_py3.10_pytorch_2.4
 
 ARG UID=
 ARG GID=
@@ -10,7 +10,7 @@ RUN pip uninstall -y torch torchvision torchaudio
 RUN pip3 install --pre torch  --index-url https://download.pytorch.org/whl/nightly/rocm6.1
 ## Remove the pre-installed triton
 RUN pip uninstall -y triton
-RUN rm -rf /opt/conda/envs/py_3.9/lib/python3.9/site-packages/triton
+RUN rm -rf /opt/conda/envs/py_3.10/lib/python3.10/site-packages/triton
 RUN pip install pandas
 ## Install amd_smi (should not be necessary later)
 #RUN pip install /opt/rocm/share/amd_smi

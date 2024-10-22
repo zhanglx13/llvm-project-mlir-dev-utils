@@ -1,0 +1,48 @@
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM128_BN64_nW4/chained_dot_bf16-rne.py"
+LDS:  32768, num_warps:  4
+VGPRS: 255 (spill: 0)
+occupancy: 2 waves/SIMD or 2 workgroups/CU (occLDSPerCU: 2, occVgprPerCU: 2)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  503.964751
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM128_BN64_nW4/chained_dot_bf16-rtz.py"
+LDS:  32768, num_warps:  4
+VGPRS: 240 (spill: 0)
+occupancy: 2 waves/SIMD or 2 workgroups/CU (occLDSPerCU: 2, occVgprPerCU: 2)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  596.873168
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM128_BN64_nW4/dot_reduce_dot_bf16-rne.py"
+LDS:  32768, num_warps:  4
+VGPRS: 234 (spill: 0)
+occupancy: 2 waves/SIMD or 2 workgroups/CU (occLDSPerCU: 2, occVgprPerCU: 2)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  472.841805
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM128_BN64_nW4/dot_reduce_dot_bf16-rtz.py"
+LDS:  32768, num_warps:  4
+VGPRS: 232 (spill: 0)
+occupancy: 2 waves/SIMD or 2 workgroups/CU (occLDSPerCU: 2, occVgprPerCU: 2)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  568.271813
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM256_BN128_nW8/chained_dot_bf16-rne.py"
+LDS:  65536, num_warps:  8
+VGPRS: 256 (spill: 68)
+occupancy: 2 waves/SIMD or 1 workgroups/CU (occLDSPerCU: 1, occVgprPerCU: 1)
+   BATCH     H    N_CTX     Triton
+0    4.0  48.0  16384.0  344.69604
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM256_BN128_nW8/chained_dot_bf16-rtz.py"
+LDS:  65536, num_warps:  8
+VGPRS: 256 (spill: 59)
+occupancy: 2 waves/SIMD or 1 workgroups/CU (occLDSPerCU: 1, occVgprPerCU: 1)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  430.643955
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM256_BN128_nW8/dot_reduce_dot_bf16-rne.py"
+LDS:  65536, num_warps:  8
+VGPRS: 242 (spill: 0)
+occupancy: 2 waves/SIMD or 1 workgroups/CU (occLDSPerCU: 1, occVgprPerCU: 1)
+   BATCH     H    N_CTX      Triton
+0    4.0  48.0  16384.0  483.743289
+root@banff-m3:/var/lib/jenkins/AMD-perf-kernels/python/perf-kernels/reg_issue# ../tools/occ.sh  "python BM256_BN128_nW8/dot_reduce_dot_bf16-rtz.py"
+LDS:  65536, num_warps:  8
+VGPRS: 218 (spill: 0)
+occupancy: 2 waves/SIMD or 1 workgroups/CU (occLDSPerCU: 1, occVgprPerCU: 1)
+   BATCH     H    N_CTX     Triton
+0    4.0  48.0  16384.0  578.06894

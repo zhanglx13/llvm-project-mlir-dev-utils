@@ -1,0 +1,5 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =3
+let g:netrw_dirhist_3='/dockerx/mnt/data-share/kk/sglang/triton/.git'
+let g:netrw_dirhist_2='/sglang/python/sglang/srt/managers'
+let g:netrw_dirhist_1='/sglang/python/dummy_grok1'

@@ -76,6 +76,52 @@
 
 (put 'narrow-to-region 'disabled nil)
 
+
+;;;; Fonts
+(when (member "Iosevka" (font-family-list))
+  (set-face-attribute 'default nil
+                      :family "Iosevka"
+                      :height 120))
+
+(set-face-attribute 'fixed-pitch nil
+                    :family (face-attribute 'default :family))
+
+(when (member "FreeSans" (font-family-list))
+  (set-face-attribute 'variable-pitch nil
+                      :family "FreeSans"
+                      :weight 'regular
+                      :height 1.1))
+
+(when (member "JoyPixels" (font-family-list))
+  (mapc (lambda (characters)
+          (set-fontset-font t characters "JoyPixels"))
+        '(symbol emoji)))
+
+;;;; Remedies for to-be-reeducated muscle memory
+;;(global-unset-key (kbd "C-x C-f"))
+;;(global-unset-key (kbd "C-x s"))
+;;(global-unset-key (kbd "M-b"))
+;;(global-unset-key (kbd "C-x k"))
+
+;;; Use-package
+
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(setq use-package-enable-imenu-support t)
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+
 ;;; commands from old settings
 ;; Key bindings to resize window
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
@@ -124,50 +170,6 @@
   :ensure t
   :config
   (load-theme 'nord t))
-
-;;;; Fonts
-(when (member "Iosevka" (font-family-list))
-  (set-face-attribute 'default nil
-                      :family "Iosevka"
-                      :height 120))
-
-(set-face-attribute 'fixed-pitch nil
-                    :family (face-attribute 'default :family))
-
-(when (member "FreeSans" (font-family-list))
-  (set-face-attribute 'variable-pitch nil
-                      :family "FreeSans"
-                      :weight 'regular
-                      :height 1.1))
-
-(when (member "JoyPixels" (font-family-list))
-  (mapc (lambda (characters)
-          (set-fontset-font t characters "JoyPixels"))
-        '(symbol emoji)))
-
-;;;; Remedies for to-be-reeducated muscle memory
-;;(global-unset-key (kbd "C-x C-f"))
-;;(global-unset-key (kbd "C-x s"))
-;;(global-unset-key (kbd "M-b"))
-;;(global-unset-key (kbd "C-x k"))
-
-;;; Use-package
-
-(require 'package)
-
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
-
-(package-initialize)
-(unless package-archive-contents
-  (package-refresh-contents))
-
-(unless (package-installed-p 'use-package)
-  (package-install 'use-package))
-
-(setq use-package-enable-imenu-support t)
-(require 'use-package)
-(setq use-package-always-ensure t)
 
 ;;; Visibility
 ;;;; Line numbers

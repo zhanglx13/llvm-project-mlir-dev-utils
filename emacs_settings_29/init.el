@@ -171,6 +171,13 @@
   :config
   (load-theme 'nord t))
 
+(defun eshell-new()
+  "Open a new instance of eshell."
+  (interactive)
+  (eshell 'N))
+
+
+
 ;;; Visibility
 ;;;; Line numbers
 (define-minor-mode my/line-numbers-highlight-line-mode
@@ -1230,35 +1237,7 @@ send a notification when the process has exited."
   (eshell-scroll-to-bottom-on-input 'all)
   (eshell-scroll-to-bottom-on-output 'all))
 
-(use-package eshell-prompt-extras
-  :after (eshell)
-  :config
-  (setq eshell-prompt-regexp "^λ ")
-  (defun my/epe-theme-prompt ()
-    (let ((prompt-path (epe-fish-path (tramp-file-local-name (eshell/pwd))))
-          (machine-face (if (epe-remote-p)
-                            'epe-remote-face
-                          'epe-symbol-face)))
-      (concat
-       (format
-        (epe-colorize-with-face "[%s]" machine-face)
-        (epe-colorize-with-face
-         (if (string-empty-p prompt-path)
-             "/"
-           prompt-path)
-         'epe-dir-face))
-       (epe-colorize-with-face
-        (concat "@" (if (epe-remote-p)
-                        (epe-remote-host)
-                      (system-name)))
-        machine-face)
-       (if (eshell-exit-success-p)
-           (epe-colorize-with-face "\nλ" 'success)
-         (epe-colorize-with-face "\nλ" 'error))
-       " ")))
-  (with-eval-after-load "esh-opt"
-    (setq eshell-highlight-prompt nil
-          eshell-prompt-function 'my/epe-theme-prompt)))
+
 
 ;;; Comint
 (use-package comint

@@ -4,3 +4,18 @@ alias ssh cd /ssh:$1:/
 alias em find-file $1
 alias pdb4q ai-pdb --pdb-timeout 120 raw pdb/query/v4/$1
 alias sudo eshell/sudo $*
+
+alias ll ~/exa/bin/exa -bghHlS
+alias la ls -al
+alias l ls -CF
+alias lls ~/exa/bin/exa -lr -s size
+alias t ~/exa/bin/exa -lT --level=2
+
+# Useful alias
+cd() { builtin cd "$@"; ll;}
+alias cd.. cd ../
+alias .. cd ../
+alias ... cd ../../
+alias .3 cd ../../../
+alias .4 cd ../../../../
+alias ~ cd ~

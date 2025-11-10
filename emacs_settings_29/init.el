@@ -165,17 +165,15 @@
 (global-hl-line-mode 1)
 (setq-default cursor-type 'box)
 
-;; nord theme
-(use-package nord-theme
+(use-package solarized-theme
   :ensure t
   :config
-  (load-theme 'nord t))
+  (load-theme 'solarized-zenburn t))
 
 (defun eshell-new()
   "Open a new instance of eshell."
   (interactive)
   (eshell 'N))
-
 
 
 ;;; Visibility
@@ -2027,4 +2025,17 @@ and the DATATYPE is prompted for."
         (message "%.2f%% is still available" %-available)
       %-available)))
 
-;;; init.el ends here
+(split-window-below)
+(split-window-right)
+(split-window-right)
+(other-window 1)
+(other-window 1)
+(split-window-right)
+(other-window 1)
+(other-window 1)
+(split-window-right)
+(split-window-right)
+(other-window 1)
+(eshell)
+
+;;; Init.el ends here
